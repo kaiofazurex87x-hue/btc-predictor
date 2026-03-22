@@ -5,45 +5,48 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>BTC Predictor</title>
     <style>
-        * { margin:0; padding:0; box-sizing:border-box; }
-        body {
-            font-family: Arial, sans-serif;
-            background: linear-gradient(135deg, #1a1a2e, #16213e);
-            min-height: 100vh; display:flex;
-            align-items:center; justify-content:center;
+        *{margin:0;padding:0;box-sizing:border-box}
+        body{
+            font-family:Arial,sans-serif;
+            background:linear-gradient(135deg,#1a1a2e,#16213e);
+            min-height:100vh;display:flex;
+            align-items:center;justify-content:center;
         }
-        .box {
-            background: rgba(255,255,255,0.1);
-            backdrop-filter: blur(10px);
-            padding: 40px; border-radius: 20px;
-            width: 320px; text-align: center;
+        .box{
+            background:rgba(255,255,255,0.1);
+            backdrop-filter:blur(10px);
+            padding:40px;border-radius:20px;
+            width:320px;text-align:center;
         }
-        h1 { color:white; margin-bottom:24px; font-size:20px; }
-        input {
-            width:100%; padding:12px; margin:8px 0;
-            border:none; border-radius:8px;
+        h1{color:white;margin-bottom:24px;font-size:20px}
+        input{
+            width:100%;padding:12px;margin:8px 0;
+            border:none;border-radius:8px;
             background:rgba(255,255,255,0.2);
-            color:white; font-size:15px;
+            color:white;font-size:15px;
         }
-        input::placeholder { color:rgba(255,255,255,0.6); }
-        button {
-            width:100%; padding:12px; margin-top:16px;
+        input::placeholder{color:rgba(255,255,255,0.6)}
+        button{
+            width:100%;padding:12px;margin-top:16px;
             background:linear-gradient(135deg,#667eea,#764ba2);
-            border:none; border-radius:8px;
-            color:white; font-weight:bold;
-            font-size:15px; cursor:pointer;
+            border:none;border-radius:8px;
+            color:white;font-weight:bold;
+            font-size:15px;cursor:pointer;
         }
-        .err { color:#ff6b6b; margin-top:10px; font-size:13px; }
+        .err{color:#ff6b6b;margin-top:10px;font-size:13px}
     </style>
 </head>
 <body>
 <div class="box">
     <h1>🎯 BTC Predictor</h1>
     {% with messages = get_flashed_messages() %}
-        {% if messages %}<div class="err">{{ messages[0] }}</div>{% endif %}
+        {% if messages %}
+            <div class="err">{{ messages[0] }}</div>
+        {% endif %}
     {% endwith %}
     <form method="POST">
-        <input type="password" name="password" placeholder="Password" required autofocus>
+        <input type="password" name="password"
+               placeholder="Password" required autofocus>
         <button type="submit">Enter</button>
     </form>
 </div>
