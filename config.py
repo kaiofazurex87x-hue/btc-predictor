@@ -2,19 +2,25 @@ import os
 
 # ── Auth ──────────────────────────────────────────────────────
 ADMIN_PASSWORD_HASH = os.environ.get("ADMIN_PASSWORD_HASH", "REPLACE_ME")
-SECRET_KEY = os.environ.get("SECRET_KEY", "change-me-in-production")
+SECRET_KEY          = os.environ.get("SECRET_KEY", "change-me-in-production")
 
 # ── Timezone ──────────────────────────────────────────────────
 TIMEZONE = "America/Chicago"  # US Central
 
+# ── Kalshi ────────────────────────────────────────────────────
+KALSHI_API_KEY     = os.environ.get("KALSHI_API_KEY", "")
+KALSHI_PRIVATE_KEY = os.environ.get("KALSHI_PRIVATE_KEY", "")
+
 # ── Kalshi edge threshold ─────────────────────────────────────
-# App says BUY only when our probability beats Kalshi price by this many cents
 MIN_EDGE_CENTS = 10
 
 # ── Self-learning ─────────────────────────────────────────────
-RETRAIN_AFTER_N_VERIFIED = 50   # auto-retrain every 50 verified predictions
-AUTO_PRUNE_DAYS = 90            # delete records older than 90 days
-PRUNE_MIN_ACCURACY = 70         # only prune when model accuracy is above this
+RETRAIN_AFTER_N_VERIFIED = 50
+AUTO_PRUNE_DAYS          = 90
+PRUNE_MIN_ACCURACY       = 70
 
-# ── Hourly tiers ──────────────────────────────────────────────
-ROUND_TO = 100
+# ── Hourly tier offsets ───────────────────────────────────────
+ROUND_TO          = 100
+SAFE_OFFSET       = 800
+MODEST_OFFSET     = 500
+AGGRESSIVE_OFFSET = 100
