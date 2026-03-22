@@ -27,9 +27,9 @@ def now_ct():
 
 class TieredHourlyPredictor:
     def __init__(self):
-        self.exchange = ccxt.kraken({'enableRateLimit': True})
-        self.scaler   = RobustScaler()
-        self.models   = {}
+        self.exchange   = ccxt.kraken({'enableRateLimit': True})
+        self.scaler     = RobustScaler()
+        self.models     = {}
         self.is_trained = False
         self._init_db()
         self._init_models()
@@ -39,18 +39,19 @@ class TieredHourlyPredictor:
         conn = self._db()
         conn.execute('''
             CREATE TABLE IF NOT EXISTS hourly (
-                id          INTEGER PRIMARY KEY AUTOINCREMENT,
-                timestamp   TEXT,
-                open_price  REAL,
-                direction   TEXT,
-                confidence  REAL,
-                target_time TEXT,
-                safe        INTEGER,
-                modest      INTEGER,
-                aggressive  INTEGER,
-                close_price REAL,
-                actual      TEXT,
-                correct     INTEGER
+                id              INTEGER PRIMARY KEY AUTOINCREMENT,
+                timestamp       TEXT,
+                current_price   REAL,
+                kalshi_line     REAL,
+                ref_price       REAL,
+                predicted_price REAL,
+                predicted_move  REAL,
+                safe            REAL,
+                modest          REAL,
+                aggressive      REAL,
+                target_time     TEXT,
+                actual_price    REAL,
+                verified        INTEGER DEFAULT 0
             )''')
         conn.commit()
         conn.close()
@@ -62,11 +63,14 @@ class TieredHourlyPredictor:
         self.models = {
             'xgboost': xgb.XGBClassifier(
                 n_estimators=400, max_depth=8, learning_rate=0.03,
-                random_state=42, eval_metric='logloss', use_label_encoder=False),
+                random_state=42, eval_metric='logloss',
+                use_label_encoder=False),
             'random_forest': RandomForestClassifier(
-                n_estimators=300, max_depth=10, random_state=42, n_jobs=-1),
+                n_estimators=300, max_depth=10,
+                random_state=42, n_jobs=-1),
             'gradient_boosting': GradientBoostingClassifier(
-                n_estimators=300, max_depth=8, learning_rate=0.05, random_state=42)
+                n_estimators=300, max_depth=8,
+                learning_rate=0.05, random_state=42)
         }
         self._load_models()
 
@@ -94,8 +98,11 @@ class TieredHourlyPredictor:
 
     def fetch_data(self, limit=5000):
         ohlcv = self.exchange.fetch_ohlcv('BTC/USD', '1m', limit=limit)
-        df = pd.DataFrame(ohlcv, columns=['timestamp','open','high','low','close','volume'])
-        df['timestamp'] = pd.to_datetime(df['timestamp'], unit='ms', utc=True).dt.tz_convert(TZ)
+        df = pd.DataFrame(
+            ohlcv,
+            columns=['timestamp','open','high','low','close','volume'])
+        df['timestamp'] = pd.to_datetime(
+            df['timestamp'], unit='ms', utc=True).dt.tz_convert(TZ)
         df.set_index('timestamp', inplace=True)
         return df
 
@@ -109,119 +116,182 @@ class TieredHourlyPredictor:
         d['rsi']       = ta.momentum.rsi(d['close'], window=14)
         d['macd']      = ta.trend.macd(d['close'])
         d['macd_sig']  = ta.trend.macd_signal(d['close'])
-        hi = ta.volatility.bollinger_hband(d['close'], window=20, window_dev=2)
-        lo = ta.volatility.bollinger_lband(d['close'], window=20, window_dev=2)
+        hi = ta.volatility.bollinger_hband(
+            d['close'], window=20, window_dev=2)
+        lo = ta.volatility.bollinger_lband(
+            d['close'], window=20, window_dev=2)
         d['bb_pos']    = (d['close'] - lo) / (hi - lo + 1e-9)
-        d['vol_ratio'] = d['volume'] / (d['volume'].rolling(20).mean() + 1e-9)
+        d['vol_ratio'] = d['volume'] / (
+            d['volume'].rolling(20).mean() + 1e-9)
         d['hour']      = d.index.hour
         d['minute']    = d.index.minute
         return d.ffill().fillna(0).replace([np.inf, -np.inf], 0)
 
     def _label(self, df):
-        pct = (df['close'].shift(-60) - df['close']) / df['close'] * 100
-        lbl = np.where(pct > 0.1, 1, np.where(pct < -0.1, 0, np.nan))
-        return pd.Series(lbl, index=df.index)
+        future_price = df['close'].shift(-60)
+        price_change = future_price - df['close']
+        buckets      = (price_change / 100).round().clip(-20, 20)
+        return pd.Series(buckets, index=df.index)
 
     def _xcols(self, df):
-        return [c for c in df.columns if c not in {'open','high','low','close','volume'}]
-
-    def _tiers(self, price, projected):
-        move = abs(projected - price)
-        up   = projected > price
-        r    = lambda v: int(round(v / config.ROUND_TO) * config.ROUND_TO)
-        if up:
-            s, m, a = r(price + move*0.25), r(price + move*0.75), r(price + move*1.25)
-        else:
-            s, m, a = r(price - move*0.25), r(price - move*0.75), r(price - move*1.25)
-        prices = sorted([s, m, a])
-        return {
-            'safe':       {'price': prices[0], 'formatted': f'${prices[0]:,}'},
-            'modest':     {'price': prices[1], 'formatted': f'${prices[1]:,}'},
-            'aggressive': {'price': prices[2], 'formatted': f'${prices[2]:,}'}
-        }
+        return [c for c in df.columns
+                if c not in {'open','high','low','close','volume'}]
 
     def train(self, df=None):
-        print("Training hourly predictor...")
+        print("Training hourly price predictor...")
         if df is None:
             df = self.fetch_data(5000)
-        df = self._features(df)
-        y  = self._label(df)
+        df  = self._features(df)
+        y   = self._label(df)
         mask = ~y.isna()
         X = np.nan_to_num(df[mask][self._xcols(df[mask])].values)
         y = y[mask].values
         split = int(len(X) * 0.8)
         Xtr = self.scaler.fit_transform(X[:split])
         Xte = self.scaler.transform(X[split:])
+        scores = {}
         for name, m in self.models.items():
             m.fit(Xtr, y[:split])
-            print(f"  {name}: {m.score(Xte, y[split:]):.2%}")
+            scores[name] = m.score(Xte, y[split:])
+            print(f"  {name}: {scores[name]:.2%}")
         self.save_models()
         self.is_trained = True
+        print(f"  Ensemble avg: {np.mean(list(scores.values())):.2%}")
+        return scores
 
     def predict(self, override_price=None):
         if not self.is_trained:
             raise RuntimeError("Hourly model not trained.")
+
         df = self.fetch_data(200)
-        if override_price is not None:
-            df.iloc[-1, df.columns.get_loc('close')] = float(override_price)
+        if df.empty:
+            raise RuntimeError("No market data.")
+
+        live_price  = float(df['close'].iloc[-1])
+        kalshi_line = float(override_price) if override_price is not None else None
+        ref_price   = kalshi_line if kalshi_line is not None else live_price
+
+        if kalshi_line is not None:
+            df.iloc[-1, df.columns.get_loc('close')] = kalshi_line
+
         df_f = self._features(df)
         X    = np.nan_to_num(df_f[self._xcols(df_f)].values[-1:])
         Xsc  = self.scaler.transform(X)
-        weights = {'xgboost': 0.35, 'random_forest': 0.35, 'gradient_boosting': 0.30}
-        up_prob = sum(
-            self.models[n].predict_proba(Xsc)[0][1] * 100 * w
-            for n, w in weights.items()
-        )
-        up_prob    = round(min(100.0, max(0.0, up_prob)), 1)
-        direction  = "UP" if up_prob >= 50 else "DOWN"
-        confidence = round(min(100.0, abs(up_prob - 50) * 2), 1)
-        price      = float(override_price) if override_price is not None else float(df['close'].iloc[-1])
-        move_pct   = (up_prob - 50) / 50 * 1.5
-        projected  = price * (1 + move_pct / 100)
-        tiers      = self._tiers(price, projected)
-        ct_now     = now_ct()
-        target     = ct_now.replace(minute=0, second=0, microsecond=0) + timedelta(hours=1)
+
+        weights = {
+            'xgboost': 0.35, 'random_forest': 0.35,
+            'gradient_boosting': 0.30}
+        predicted_bucket = 0.0
+        for name, m in self.models.items():
+            try:
+                bucket = float(m.predict(Xsc)[0])
+            except Exception:
+                bucket = 0.0
+            predicted_bucket += bucket * weights.get(name, 0)
+
+        predicted_move  = predicted_bucket * 100
+        predicted_price = round(ref_price + predicted_move, 2)
+
+        def fmt(p):
+            r = round(p / config.ROUND_TO) * config.ROUND_TO
+            return {'price': r, 'formatted': f'${r:,.0f}'}
+
+        tiers = {
+            'safe':       fmt(predicted_price - config.SAFE_OFFSET),
+            'modest':     fmt(predicted_price - config.MODEST_OFFSET),
+            'aggressive': fmt(predicted_price - config.AGGRESSIVE_OFFSET)
+        }
+
+        ct_now = now_ct()
+        target = ct_now.replace(
+            minute=0, second=0, microsecond=0) + timedelta(hours=1)
+
         conn = self._db()
         conn.execute(
             """INSERT INTO hourly
-               (timestamp, open_price, direction, confidence, target_time, safe, modest, aggressive)
-               VALUES (?,?,?,?,?,?,?,?)""",
-            (ct_now.isoformat(), price, direction, confidence, target.isoformat(),
-             tiers['safe']['price'], tiers['modest']['price'], tiers['aggressive']['price'])
+               (timestamp, current_price, kalshi_line, ref_price,
+                predicted_price, predicted_move,
+                safe, modest, aggressive, target_time)
+               VALUES (?,?,?,?,?,?,?,?,?,?)""",
+            (ct_now.isoformat(), live_price, kalshi_line, ref_price,
+             predicted_price, round(predicted_move, 2),
+             tiers['safe']['price'],
+             tiers['modest']['price'],
+             tiers['aggressive']['price'],
+             target.isoformat())
         )
         conn.commit()
         conn.close()
+
         return {
-            'direction':    direction,
-            'confidence':   confidence,
-            'up_prob':      up_prob,
-            'open_price':   price,
-            'projected':    round(projected, 0),
-            'move_pct':     round(move_pct, 2),
-            'target_time':  target.strftime('%I:%M %p CT'),
-            'tiers':        tiers
+            'current_price':   live_price,
+            'kalshi_line':     kalshi_line,
+            'ref_price':       ref_price,
+            'predicted_price': predicted_price,
+            'predicted_move':  round(predicted_move, 2),
+            'target_time':     target.strftime('%I:%M %p CT'),
+            'tiers':           tiers
         }
+
+    def verify_pending(self):
+        ct_now = now_ct()
+        conn   = self._db()
+        rows   = conn.execute(
+            "SELECT id, target_time FROM hourly WHERE verified=0"
+        ).fetchall()
+        verified = 0
+        for row_id, target_str in rows:
+            target = datetime.fromisoformat(target_str)
+            if target.tzinfo is None:
+                target = TZ.localize(target)
+            if ct_now < target + timedelta(minutes=1):
+                continue
+            try:
+                since        = int(target.timestamp() * 1000)
+                ohlcv        = self.exchange.fetch_ohlcv(
+                    'BTC/USD', '1m', since=since, limit=1)
+                if not ohlcv:
+                    continue
+                actual_price = ohlcv[0][4]
+                conn.execute(
+                    "UPDATE hourly SET actual_price=?, verified=1 WHERE id=?",
+                    (actual_price, row_id))
+                verified += 1
+            except Exception as e:
+                print(f"[Hourly verify] error id={row_id}: {e}")
+        conn.commit()
+        conn.close()
+        return verified
 
     def get_accuracy(self):
         conn = self._db()
         try:
             df = pd.read_sql_query(
-                "SELECT correct FROM hourly WHERE correct IS NOT NULL", conn)
+                """SELECT predicted_price, actual_price FROM hourly
+                   WHERE verified=1 AND actual_price IS NOT NULL""",
+                conn)
         except Exception:
-            df = pd.DataFrame(columns=['correct'])
+            df = pd.DataFrame()
         conn.close()
-        if len(df) < 5:
-            return {'overall': 50.0, 'recent': 50.0, 'total': len(df)}
-        overall = round(df['correct'].mean() * 100, 1)
-        recent  = round(df.tail(100)['correct'].mean() * 100, 1)
-        return {'overall': overall, 'recent': recent, 'total': len(df)}
+        if len(df) < 3:
+            return {'within_500': 0, 'within_1000': 0,
+                    'avg_error': 0, 'total': len(df)}
+        df['error'] = (df['predicted_price'] - df['actual_price']).abs()
+        return {
+            'within_500':  round((df['error'] <= 500).mean()  * 100, 1),
+            'within_1000': round((df['error'] <= 1000).mean() * 100, 1),
+            'avg_error':   round(df['error'].mean(), 0),
+            'total':       len(df)
+        }
 
-    def get_history(self, limit=20):
+    def get_history(self, limit=10):
         conn = self._db()
         try:
             df = pd.read_sql_query(
-                """SELECT timestamp, open_price, direction, confidence,
-                          safe, modest, aggressive, actual, correct
+                """SELECT timestamp, current_price, kalshi_line,
+                          ref_price, predicted_price, predicted_move,
+                          safe, modest, aggressive,
+                          target_time, actual_price, verified
                    FROM hourly ORDER BY id DESC LIMIT ?""",
                 conn, params=(limit,))
         except Exception:
