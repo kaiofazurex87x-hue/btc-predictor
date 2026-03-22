@@ -10,5 +10,7 @@ services:
         sync: false
       - key: SECRET_KEY
         sync: false
-      - key: PYTHON_VERSION
-        value: 3.11
+      - key: KALSHI_API_KEY
+        sync: false
+      - key: KALSHI_PRIVATE_KEY
+        sync: false
