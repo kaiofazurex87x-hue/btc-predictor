@@ -10,10 +10,14 @@ from predictor import BTCPredictor
 from tiered_predictor import TieredHourlyPredictor
 from whale_tracker import WhaleTracker
 
-for d in ['data', 'models/predictor', 'models/tiered', 'templates']:
-    os.makedirs(d, exist_ok=True)
+# ── Fix working directory for Render ──────────────────────────
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+os.chdir(BASE_DIR)
 
-app = Flask(__name__)
+for d in ['data', 'models/predictor', 'models/tiered', 'templates']:
+    os.makedirs(os.path.join(BASE_DIR, d), exist_ok=True)
+
+app = Flask(__name__, template_folder=os.path.join(BASE_DIR, 'templates'))
 app.config['SECRET_KEY'] = config.SECRET_KEY
 
 predictor = BTCPredictor()
@@ -87,7 +91,7 @@ def dashboard():
 def api_predict():
     try:
         body     = request.get_json(silent=True) or {}
-        override = body.get('override_price')   # optional
+        override = body.get('override_price')
         return jsonify(predictor.predict(override_price=override))
     except Exception as e:
         return jsonify({'error': str(e)})
@@ -100,8 +104,8 @@ def api_kalshi_check():
         body    = request.get_json(silent=True) or {}
         pred_id = body.get('pred_id')
         up_prob = float(body.get('up_prob'))
-        yes     = body.get('kalshi_yes')   # optional — price of YES on Kalshi
-        no      = body.get('kalshi_no')    # optional — price of NO  on Kalshi
+        yes     = body.get('kalshi_yes')
+        no      = body.get('kalshi_no')
         if yes is not None: yes = float(yes)
         if no  is not None: no  = float(no)
         return jsonify(predictor.kalshi_check(pred_id, up_prob, kalshi_yes=yes, kalshi_no=no))
@@ -114,7 +118,7 @@ def api_kalshi_check():
 def api_hourly():
     try:
         body     = request.get_json(silent=True) or {}
-        override = body.get('override_price')   # optional
+        override = body.get('override_price')
         return jsonify(tiered.predict(override_price=override))
     except Exception as e:
         return jsonify({'error': str(e)})
@@ -156,6 +160,11 @@ def api_retrain():
         return jsonify({'success': True})
     except Exception as e:
         return jsonify({'error': str(e)})
+
+# ── Health check (keeps UptimeRobot happy) ──────────────────────
+@app.route('/health')
+def health():
+    return jsonify({'status': 'ok'})
 
 if __name__ == '__main__':
     print("Starting BTC Predictor...")
