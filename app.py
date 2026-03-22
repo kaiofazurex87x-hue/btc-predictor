@@ -43,28 +43,73 @@ def verify_pw(pw):
     except Exception:
         return False
 
-# ── Background loops ───────────────────────────────────────────
+# ── Auto-predict every 15 minutes ─────────────────────────────
+def auto_predict_loop():
+    import pytz
+    from datetime import datetime, timedelta
+    TZ = pytz.timezone(config.TIMEZONE)
+    while not predictor.is_trained:
+        time.sleep(30)
+    while True:
+        now      = datetime.now(pytz.utc).astimezone(TZ)
+        next_min = ((now.minute // 15) + 1) * 15
+        if next_min >= 60:
+            next_run = now.replace(minute=0, second=2, microsecond=0) + timedelta(hours=1)
+        else:
+            next_run = now.replace(minute=next_min, second=2, microsecond=0)
+        wait = (next_run - now).total_seconds()
+        time.sleep(max(wait, 1))
+        try:
+            result = predictor.predict()
+            print(f"[Auto 15-min] {result['direction']} {result['confidence']}% target {result['target_time']}")
+        except Exception as e:
+            print(f"[Auto 15-min] Error: {e}")
+
+# ── Auto-predict every hour ────────────────────────────────────
+def auto_hourly_loop():
+    import pytz
+    from datetime import datetime, timedelta
+    TZ = pytz.timezone(config.TIMEZONE)
+    while not tiered.is_trained:
+        time.sleep(30)
+    while True:
+        now      = datetime.now(pytz.utc).astimezone(TZ)
+        next_run = now.replace(minute=0, second=5, microsecond=0) + timedelta(hours=1)
+        wait     = (next_run - now).total_seconds()
+        time.sleep(max(wait, 1))
+        try:
+            result = tiered.predict()
+            print(f"[Auto Hourly] {result['direction']} {result['confidence']}% target {result['target_time']}")
+        except Exception as e:
+            print(f"[Auto Hourly] Error: {e}")
+
+# ── Auto-verify every 2 minutes ───────────────────────────────
 def verify_loop():
     while True:
         time.sleep(120)
         try:
             n = predictor.verify_pending()
-            if n: print(f"Verified {n} predictions")
+            if n:
+                print(f"[Verify] Verified {n} predictions")
         except Exception as e:
-            print(f"Verify error: {e}")
+            print(f"[Verify] Error: {e}")
 
+# ── Auto-prune every 6 hours ──────────────────────────────────
 def prune_loop():
     while True:
         time.sleep(6 * 3600)
         try:
             predictor.prune_old_data()
         except Exception as e:
-            print(f"Prune error: {e}")
+            print(f"[Prune] Error: {e}")
 
-threading.Thread(target=verify_loop, daemon=True).start()
-threading.Thread(target=prune_loop,  daemon=True).start()
+# ── Start all background threads ──────────────────────────────
+threading.Thread(target=auto_predict_loop, daemon=True).start()
+threading.Thread(target=auto_hourly_loop,  daemon=True).start()
+threading.Thread(target=verify_loop,       daemon=True).start()
+threading.Thread(target=prune_loop,        daemon=True).start()
 
-# ── Auth ────────────────────────────────────────────────────────
+# ── Auth ───────────────────────────────────────────────────────
 @app.route('/login', methods=['GET','POST'])
 def login():
     if request.method == 'POST':
@@ -85,7 +130,7 @@ def logout():
 def dashboard():
     return render_template('dashboard.html')
 
-# ── API: predict ────────────────────────────────────────────────
+# ── API: predict (manual) ──────────────────────────────────────
 @app.route('/api/predict', methods=['POST'])
 @login_required
 def api_predict():
@@ -96,7 +141,7 @@ def api_predict():
     except Exception as e:
         return jsonify({'error': str(e)})
 
-# ── API: Kalshi check (fully optional) ─────────────────────────
+# ── API: Kalshi check (optional) ──────────────────────────────
 @app.route('/api/kalshi_check', methods=['POST'])
 @login_required
 def api_kalshi_check():
@@ -112,7 +157,7 @@ def api_kalshi_check():
     except Exception as e:
         return jsonify({'error': str(e)})
 
-# ── API: hourly tiered ──────────────────────────────────────────
+# ── API: hourly (manual) ───────────────────────────────────────
 @app.route('/api/hourly', methods=['POST'])
 @login_required
 def api_hourly():
@@ -123,7 +168,21 @@ def api_hourly():
     except Exception as e:
         return jsonify({'error': str(e)})
 
-# ── API: accuracy ───────────────────────────────────────────────
+# ── API: latest auto-prediction ────────────────────────────────
+@app.route('/api/latest')
+@login_required
+def api_latest():
+    try:
+        history = predictor.get_history(1)
+        hourly  = tiered.get_history(1)
+        return jsonify({
+            'min15':  history[0] if history else None,
+            'hourly': hourly[0]  if hourly  else None
+        })
+    except Exception as e:
+        return jsonify({'error': str(e)})
+
+# ── API: accuracy ──────────────────────────────────────────────
 @app.route('/api/accuracy')
 @login_required
 def api_accuracy():
@@ -132,7 +191,7 @@ def api_accuracy():
         'hourly': tiered.get_accuracy()
     })
 
-# ── API: history ────────────────────────────────────────────────
+# ── API: history ───────────────────────────────────────────────
 @app.route('/api/history')
 @login_required
 def api_history():
@@ -141,7 +200,7 @@ def api_history():
         'hourly': tiered.get_history(10)
     })
 
-# ── API: whale ──────────────────────────────────────────────────
+# ── API: whale ─────────────────────────────────────────────────
 @app.route('/api/whale')
 @login_required
 def api_whale():
@@ -150,18 +209,35 @@ def api_whale():
     except Exception as e:
         return jsonify({'error': str(e)})
 
-# ── API: manual retrain ─────────────────────────────────────────
+# ── API: retrain (manual trigger) ─────────────────────────────
 @app.route('/api/retrain', methods=['POST'])
 @login_required
 def api_retrain():
     try:
-        predictor.train()
-        tiered.train()
-        return jsonify({'success': True})
+        def run_training():
+            try:
+                print("[Retrain] Training 15-min model...")
+                predictor.train()
+                print("[Retrain] Training hourly model...")
+                tiered.train()
+                print("[Retrain] Complete!")
+            except Exception as e:
+                print(f"[Retrain] Error: {e}")
+        threading.Thread(target=run_training, daemon=True).start()
+        return jsonify({'success': True, 'message': 'Training started. Takes 3-5 minutes.'})
     except Exception as e:
         return jsonify({'error': str(e)})
 
-# ── Health check (keeps UptimeRobot happy) ──────────────────────
+# ── API: train status ──────────────────────────────────────────
+@app.route('/api/train_status')
+@login_required
+def train_status():
+    return jsonify({
+        'min15_trained':  predictor.is_trained,
+        'hourly_trained': tiered.is_trained
+    })
+
+# ── Health check for UptimeRobot ──────────────────────────────
 @app.route('/health')
 def health():
     return jsonify({'status': 'ok'})
