@@ -16,31 +16,38 @@
         .card h2{font-size:13px;opacity:.7;margin-bottom:14px;text-transform:uppercase;letter-spacing:.5px}
         .big-dir{font-size:52px;font-weight:900;text-align:center;margin:6px 0;letter-spacing:2px}
         .big-dir.UP{color:#10b981}.big-dir.DOWN{color:#ef4444}.big-dir.pending{color:#94a3b8}
+        .big-price{font-size:36px;font-weight:900;text-align:center;margin:10px 0;color:#667eea}
         .conf{text-align:center;font-size:22px;font-weight:bold;margin-bottom:4px}
-        .sub{text-align:center;font-size:11px;opacity:.55;margin-bottom:12px}
+        .ref-price{text-align:center;font-size:13px;color:#f59e0b;font-weight:bold;margin:6px 0}
+        .sub{text-align:center;font-size:11px;opacity:.55;margin-bottom:6px;line-height:1.6}
         .bar-bg{background:rgba(255,255,255,0.12);border-radius:8px;height:10px;overflow:hidden;margin:10px 0}
         .bar-fill{height:100%;background:linear-gradient(90deg,#667eea,#10b981);border-radius:8px;transition:width .4s}
         .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:12px 0}
         .stat{background:rgba(0,0,0,0.2);border-radius:10px;padding:10px;text-align:center}
         .sv{font-size:17px;font-weight:bold;color:#667eea}.sl{font-size:10px;opacity:.6;margin-top:3px}
         .tiers{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:12px 0}
-        .tier{border-radius:10px;padding:10px;text-align:center;background:rgba(0,0,0,0.25)}
-        .tier .label{font-size:10px;opacity:.7;text-transform:uppercase}
-        .tier .tp{font-size:16px;font-weight:bold;margin-top:4px}
-        .tier.safe{border-top:3px solid #10b981}.tier.modest{border-top:3px solid #f59e0b}.tier.agg{border-top:3px solid #ef4444}
+        .tier{border-radius:10px;padding:12px;text-align:center;background:rgba(0,0,0,0.25)}
+        .tier .label{font-size:10px;opacity:.7;text-transform:uppercase;margin-bottom:4px}
+        .tier .tp{font-size:18px;font-weight:bold;margin-top:4px}
+        .tier .offset{font-size:9px;opacity:.45;margin-top:3px}
+        .tier.safe{border-top:3px solid #10b981}
+        .tier.modest{border-top:3px solid #f59e0b}
+        .tier.agg{border-top:3px solid #ef4444}
         .btn{width:100%;padding:11px;margin-top:10px;background:linear-gradient(135deg,#667eea,#764ba2);border:none;border-radius:8px;color:white;font-weight:bold;font-size:13px;cursor:pointer}
         .btn:disabled{opacity:.5;cursor:not-allowed}
-        .input-row{display:flex;gap:8px;margin-top:10px}
+        .section-label{font-size:11px;opacity:.5;margin-bottom:6px;margin-top:14px;padding-top:14px;border-top:1px solid rgba(255,255,255,0.08)}
+        .input-row{display:flex;gap:8px;margin-top:6px}
         .input-row input{flex:1;padding:9px 12px;background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);border-radius:8px;color:white;font-size:13px}
-        .input-row input::placeholder{color:rgba(255,255,255,0.4)}
+        .input-row input::placeholder{color:rgba(255,255,255,0.35)}
         .input-row button{padding:9px 16px;background:linear-gradient(135deg,#667eea,#764ba2);border:none;border-radius:8px;color:white;font-size:13px;cursor:pointer;white-space:nowrap}
-        .rec-box{margin-top:12px;padding:14px;border-radius:10px;text-align:center;font-size:14px;display:none}
-        .rec-box.BUY{background:rgba(16,185,129,0.2);border:1px solid #10b981}
-        .rec-box.SKIP{background:rgba(239,68,68,0.15);border:1px solid #ef4444}
-        .rec-big{font-size:28px;font-weight:900;margin-bottom:4px}
-        .BUY .rec-big{color:#10b981}.SKIP .rec-big{color:#ef4444}
+        .hint{font-size:10px;opacity:.4;margin-top:4px;text-align:center}
         .train-bar{background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.12);border-radius:12px;padding:14px 20px;margin-bottom:16px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
         .train-status{font-size:13px;opacity:.8}
+        .locked-badge{display:inline-block;background:rgba(245,158,11,0.2);border:1px solid #f59e0b;color:#f59e0b;font-size:10px;padding:2px 8px;border-radius:10px;margin-left:6px}
+        .kalshi-auto{background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.3);border-radius:8px;padding:8px 12px;font-size:12px;text-align:center;margin-bottom:10px;display:none}
+        .move-badge{padding:4px 12px;border-radius:20px;font-size:13px;font-weight:bold;margin:6px auto;display:block;text-align:center;width:fit-content}
+        .move-up{background:rgba(16,185,129,0.15);color:#10b981;border:1px solid #10b981}
+        .move-down{background:rgba(239,68,68,0.15);color:#ef4444;border:1px solid #ef4444}
         table{width:100%;border-collapse:collapse;font-size:11px;margin-top:12px}
         th,td{padding:8px;text-align:left;border-bottom:1px solid rgba(255,255,255,0.07)}
         th{opacity:.5;font-weight:normal;text-transform:uppercase;font-size:10px}
@@ -52,7 +59,6 @@
 <body>
 <div class="wrap">
 
-    <!-- Header -->
     <header>
         <h1>🎯 BTC Predictor — Beats Kalshi</h1>
         <div style="display:flex;gap:10px;align-items:center">
@@ -61,80 +67,125 @@
         </div>
     </header>
 
-    <!-- Train bar -->
     <div class="train-bar">
         <div>
-            <div style="font-size:13px;font-weight:bold;margin-bottom:3px">🧠 Model Training</div>
-            <div class="train-status" id="trainStatus">Checking status...</div>
+            <div style="font-size:13px;font-weight:bold;margin-bottom:3px">
+                🧠 Model Training
+            </div>
+            <div class="train-status" id="trainStatus">Checking...</div>
         </div>
-        <button onclick="startTraining()" id="trainBtn" class="btn" style="width:auto;padding:10px 20px;margin:0">
+        <button onclick="startTraining()" id="trainBtn"
+                class="btn" style="width:auto;padding:10px 20px;margin:0">
             🧠 Train Models
         </button>
     </div>
 
-    <!-- Row 1: 15-min + Hourly -->
     <div class="grid">
 
-        <!-- 15-min card -->
+        <!-- ── 15-min card ── -->
         <div class="card">
-            <h2>⏱ 15-Minute Prediction (Auto every 15 min)</h2>
+            <h2>
+                ⏱ 15-Min — UP or DOWN?
+                <span id="lockedBadge" class="locked-badge"
+                      style="display:none">🔒 LOCKED</span>
+            </h2>
+
+            <!-- Shows when Kalshi line was auto-fetched -->
+            <div class="kalshi-auto" id="kalshiAutoBox">
+                🟢 Kalshi line auto-fetched:
+                <strong id="kalshiAutoLine">--</strong>
+            </div>
+
             <div class="big-dir pending" id="dir15">--</div>
             <div class="conf" id="conf15">--%</div>
-            <div class="sub" id="target15">Train models first — then auto-predicts every 15 min</div>
-            <div class="bar-bg"><div class="bar-fill" id="bar15" style="width:0%"></div></div>
+            <div class="ref-price" id="refPrice15" style="display:none"></div>
+            <div class="sub" id="target15">Train models first</div>
+            <div class="bar-bg">
+                <div class="bar-fill" id="bar15" style="width:0%"></div>
+            </div>
 
             <div class="stats">
-                <div class="stat"><div class="sv" id="acc15">--</div><div class="sl">Accuracy</div></div>
-                <div class="stat"><div class="sv" id="rec15">--</div><div class="sl">Recent 100</div></div>
-                <div class="stat"><div class="sv" id="edge15">--</div><div class="sl">Edge vs 50%</div></div>
-            </div>
-
-            <!-- Optional manual predict -->
-            <div class="input-row">
-                <input type="number" id="overridePrice" placeholder="Override BTC price (optional)">
-                <button onclick="predict15()">Predict Now</button>
-            </div>
-
-            <!-- Optional Kalshi check -->
-            <div style="margin-top:14px;padding-top:14px;border-top:1px solid rgba(255,255,255,0.1)">
-                <div style="font-size:11px;opacity:.5;margin-bottom:6px">OPTIONAL — Enter Kalshi price(s) you see in the app:</div>
-                <div class="input-row">
-                    <input type="number" id="kYes" placeholder="YES price (¢)">
-                    <input type="number" id="kNo"  placeholder="NO price (¢)">
-                    <button onclick="checkKalshi()">Check Edge</button>
+                <div class="stat">
+                    <div class="sv" id="acc15">--</div>
+                    <div class="sl">Accuracy</div>
+                </div>
+                <div class="stat">
+                    <div class="sv" id="rec15">--</div>
+                    <div class="sl">Recent 100</div>
+                </div>
+                <div class="stat">
+                    <div class="sv" id="edge15">--</div>
+                    <div class="sl">Edge vs 50%</div>
                 </div>
             </div>
 
-            <!-- BUY/SKIP result -->
-            <div class="rec-box" id="recBox">
-                <div class="rec-big" id="recText">--</div>
-                <div id="recDetail" style="font-size:12px;opacity:.8;margin-top:4px;white-space:pre-line"></div>
+            <!-- Only input: Kalshi line price -->
+            <div class="section-label">
+                OPTIONAL — Enter the Kalshi line price you see right now:
+            </div>
+            <div class="input-row">
+                <input type="number" id="kalshiLine"
+                       placeholder="e.g. 67807.75" step="0.01">
+                <button onclick="predict15()">Predict</button>
+            </div>
+            <div class="hint">
+                Leave blank — app auto-fetches Kalshi line every 15 min
             </div>
         </div>
 
-        <!-- Hourly tiered card -->
+        <!-- ── Hourly card ── -->
         <div class="card">
-            <h2>📊 Hourly Price Targets (Auto every hour)</h2>
-            <div class="big-dir pending" id="dirH">--</div>
-            <div class="conf" id="confH">--%</div>
-            <div class="sub" id="targetH">Train models first — then auto-predicts every hour</div>
-            <div class="bar-bg"><div class="bar-fill" id="barH" style="width:0%"></div></div>
+            <h2>📊 Hourly Price Prediction</h2>
+
+            <div class="sub" id="targetH">Train models first</div>
+            <div class="big-price" id="predictedPrice">--</div>
+            <div class="ref-price" id="refPriceH" style="display:none"></div>
+            <div id="moveBadgeWrap" style="text-align:center;margin:4px 0"></div>
 
             <div class="tiers">
-                <div class="tier agg"><div class="label">🔴 Aggressive</div><div class="tp" id="tAgg">--</div></div>
-                <div class="tier modest"><div class="label">🟠 Modest</div><div class="tp" id="tMod">--</div></div>
-                <div class="tier safe"><div class="label">🟢 Safe</div><div class="tp" id="tSafe">--</div></div>
+                <div class="tier safe">
+                    <div class="label">🟢 Safe</div>
+                    <div class="tp" id="tSafe">--</div>
+                    <div class="offset">predicted − $800</div>
+                </div>
+                <div class="tier modest">
+                    <div class="label">🟠 Modest</div>
+                    <div class="tp" id="tMod">--</div>
+                    <div class="offset">predicted − $500</div>
+                </div>
+                <div class="tier agg">
+                    <div class="label">🔴 Aggressive</div>
+                    <div class="tp" id="tAgg">--</div>
+                    <div class="offset">predicted − $100</div>
+                </div>
             </div>
 
             <div class="stats">
-                <div class="stat"><div class="sv" id="accH">--</div><div class="sl">Accuracy</div></div>
-                <div class="stat"><div class="sv" id="recH">--</div><div class="sl">Recent 100</div></div>
-                <div class="stat"><div class="sv" id="totH">--</div><div class="sl">Total Predictions</div></div>
+                <div class="stat">
+                    <div class="sv" id="accH500">--</div>
+                    <div class="sl">Within $500</div>
+                </div>
+                <div class="stat">
+                    <div class="sv" id="accH1000">--</div>
+                    <div class="sl">Within $1000</div>
+                </div>
+                <div class="stat">
+                    <div class="sv" id="totH">--</div>
+                    <div class="sl">Total Verified</div>
+                </div>
             </div>
 
+            <!-- Only input: Kalshi line price -->
+            <div class="section-label">
+                OPTIONAL — Enter the Kalshi line price you see right now:
+            </div>
             <div class="input-row">
-                <input type="number" id="overridePriceH" placeholder="Override BTC price (optional)">
-                <button onclick="predictHourly()">Predict Now</button>
+                <input type="number" id="kalshiLineH"
+                       placeholder="e.g. 68597.29" step="0.01">
+                <button onclick="predictHourly()">Predict</button>
+            </div>
+            <div class="hint">
+                Leave blank — app auto-fetches Kalshi hourly line
             </div>
         </div>
     </div>
@@ -143,33 +194,76 @@
     <div class="card" style="margin-bottom:16px">
         <h2>🐋 Whale Tracker</h2>
         <div class="stats">
-            <div class="stat"><div class="sv" id="wSent">--</div><div class="sl">Sentiment</div></div>
-            <div class="stat"><div class="sv" id="wBuy">--</div><div class="sl">Buy $M</div></div>
-            <div class="stat"><div class="sv" id="wSell">--</div><div class="sl">Sell $M</div></div>
-            <div class="stat"><div class="sv" id="wAcc">--</div><div class="sl">Accumulating</div></div>
+            <div class="stat">
+                <div class="sv" id="wSent">--</div>
+                <div class="sl">Sentiment</div>
+            </div>
+            <div class="stat">
+                <div class="sv" id="wBuy">--</div>
+                <div class="sl">Buy $M</div>
+            </div>
+            <div class="stat">
+                <div class="sv" id="wSell">--</div>
+                <div class="sl">Sell $M</div>
+            </div>
+            <div class="stat">
+                <div class="sv" id="wAcc">--</div>
+                <div class="sl">Accumulating</div>
+            </div>
         </div>
     </div>
 
-    <!-- History -->
-    <div class="card">
-        <h2>📜 Prediction History (auto-verified every 2 min)</h2>
+    <!-- 15-min History -->
+    <div class="card" style="margin-bottom:16px">
+        <h2>📜 15-Min History (auto-verified every 2 min)</h2>
         <div style="overflow-x:auto">
             <table>
                 <thead>
                     <tr>
                         <th>Time (CT)</th>
-                        <th>Open $</th>
+                        <th>Kalshi Line $</th>
                         <th>Direction</th>
-                        <th>Conf</th>
+                        <th>Confidence</th>
                         <th>Close $</th>
                         <th>Result</th>
-                        <th>Kalshi YES</th>
-                        <th>Kalshi NO</th>
-                        <th>Rec</th>
                     </tr>
                 </thead>
                 <tbody id="histBody">
-                    <tr><td colspan="9" style="opacity:.4;text-align:center;padding:20px">Train models to start auto-predictions</td></tr>
+                    <tr>
+                        <td colspan="6"
+                            style="opacity:.4;text-align:center;padding:20px">
+                            No predictions yet
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Hourly History -->
+    <div class="card">
+        <h2>📊 Hourly Price History</h2>
+        <div style="overflow-x:auto">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Time (CT)</th>
+                        <th>Reference $</th>
+                        <th>Predicted $</th>
+                        <th>Safe</th>
+                        <th>Modest</th>
+                        <th>Aggressive</th>
+                        <th>Actual $</th>
+                        <th>Error</th>
+                    </tr>
+                </thead>
+                <tbody id="histHourly">
+                    <tr>
+                        <td colspan="8"
+                            style="opacity:.4;text-align:center;padding:20px">
+                            No predictions yet
+                        </td>
+                    </tr>
                 </tbody>
             </table>
         </div>
@@ -190,20 +284,24 @@ async function checkTrainStatus() {
         const btn    = document.getElementById('trainBtn');
         const header = document.getElementById('headerStatus');
         if (s.min15_trained && s.hourly_trained) {
-            status.textContent = '✅ Both models trained — auto-predicting every 15 min and every hour';
-            header.textContent = '✅ Models ready';
+            status.textContent =
+                '✅ Both models ready — auto-predicting every 15 min and every hour';
+            header.textContent = '✅ Ready';
             btn.textContent    = '🔁 Retrain';
             btn.disabled       = false;
         } else if (!s.min15_trained && !s.hourly_trained) {
-            status.textContent = '⚠️ Not trained yet — click Train Models to start (takes 3-5 min)';
+            status.textContent =
+                '⚠️ Not trained — click Train Models (takes 3-5 min)';
             header.textContent = '⚠️ Not trained';
             btn.disabled       = false;
         } else {
-            status.textContent = '⚠️ Partially trained — click Train Models';
-            btn.disabled       = false;
+            status.textContent =
+                '⚠️ Partially trained — click Train Models';
+            btn.disabled = false;
         }
     } catch(e) {
-        document.getElementById('trainStatus').textContent = 'Could not check status';
+        document.getElementById('trainStatus').textContent =
+            'Could not check status';
     }
 }
 
@@ -212,7 +310,8 @@ async function startTraining() {
     const status = document.getElementById('trainStatus');
     btn.textContent    = '⏳ Training...';
     btn.disabled       = true;
-    status.textContent = 'Training in progress — fetching 5000 BTC candles and training 6 models. Please wait 3-5 minutes...';
+    status.textContent =
+        'Fetching 5000 BTC candles and training 6 models — please wait 3-5 min...';
     try {
         await post('/api/retrain', {});
         trainPoll = setInterval(async () => {
@@ -221,8 +320,10 @@ async function startTraining() {
                 clearInterval(trainPoll);
                 btn.textContent    = '🔁 Retrain';
                 btn.disabled       = false;
-                status.textContent = '✅ Both models trained — auto-predicting every 15 min and every hour';
-                document.getElementById('headerStatus').textContent = '✅ Models ready';
+                status.textContent =
+                    '✅ Both models ready — auto-predicting every 15 min and every hour';
+                document.getElementById('headerStatus').textContent =
+                    '✅ Ready';
                 await loadAccuracy();
                 await loadLatest();
             }
@@ -234,17 +335,14 @@ async function startTraining() {
     }
 }
 
-// ── Manual predict 15-min ──────────────────────────────────────
+// ── Predict 15-min ─────────────────────────────────────────────
 async function predict15() {
-    const override = document.getElementById('overridePrice').value;
-    const body     = override ? {override_price: parseFloat(override)} : {};
+    const line = document.getElementById('kalshiLine').value;
+    const body = line ? {kalshi_line: parseFloat(line)} : {};
     try {
         const d = await post('/api/predict', body);
         if (d.error) { alert('Error: ' + d.error); return; }
         updateDir15(d);
-        document.getElementById('recBox').style.display = 'none';
-        document.getElementById('kYes').value = '';
-        document.getElementById('kNo').value  = '';
         await loadAccuracy();
         await loadHistory();
     } catch(e) { alert('Error: ' + e); }
@@ -253,46 +351,41 @@ async function predict15() {
 function updateDir15(d) {
     lastPredId = d.id;
     lastUpProb = d.up_prob;
-    const dir  = document.getElementById('dir15');
+
+    const dir = document.getElementById('dir15');
     dir.textContent = d.direction;
     dir.className   = 'big-dir ' + d.direction;
-    document.getElementById('conf15').textContent   = d.confidence + '%';
-    document.getElementById('bar15').style.width    = d.confidence + '%';
-    document.getElementById('target15').textContent =
-        (d.auto ? 'Auto-predicted' : 'Manual') + '  |  Target: ' + d.target_time + '  |  BTC: $' + Number(d.open_price).toLocaleString();
+
+    document.getElementById('conf15').textContent = d.confidence + '%';
+    document.getElementById('bar15').style.width  = d.confidence + '%';
+
+    // Show the reference price — this is the Kalshi line or live BTC
+    const refEl = document.getElementById('refPrice15');
+    refEl.style.display = 'block';
+    if (d.kalshi_line) {
+        refEl.textContent =
+            '📍 Kalshi Line: $' + fmt2(d.kalshi_line) +
+            ' — prediction is UP or DOWN from this price';
+    } else {
+        refEl.textContent =
+            '📍 Live BTC: $' +
+            fmt2(d.live_price || d.reference_price || 0) +
+            ' — prediction is UP or DOWN from this price';
+    }
+
+    // Show locked badge if this is within the same 15-min window
+    document.getElementById('lockedBadge').style.display =
+        d.cached ? 'inline-block' : 'none';
+
+    document.getElementById('target15').textContent = d.cached
+        ? '🔒 Same window — prediction locked until ' + d.target_time
+        : 'Will BTC be above or below that price at ' + d.target_time + '?';
 }
 
-// ── Kalshi check ───────────────────────────────────────────────
-async function checkKalshi() {
-    if (!lastPredId) { alert('Get a prediction first'); return; }
-    const yes = document.getElementById('kYes').value;
-    const no  = document.getElementById('kNo').value;
-    if (!yes && !no) { alert('Enter at least one Kalshi price (YES or NO)'); return; }
-    const body = {
-        pred_id:    lastPredId,
-        up_prob:    lastUpProb,
-        kalshi_yes: yes ? parseFloat(yes) : null,
-        kalshi_no:  no  ? parseFloat(no)  : null
-    };
-    try {
-        const d = await post('/api/kalshi_check', body);
-        if (d.error) { alert('Error: ' + d.error); return; }
-        const box = document.getElementById('recBox');
-        box.className         = 'rec-box ' + d.best_action;
-        box.style.display     = 'block';
-        document.getElementById('recText').textContent = d.best_action + ' ' + d.best_side;
-        let detail = `Edge: ${d.best_edge >= 0 ? '+' : ''}${d.best_edge}¢  (need +10¢ to BUY)`;
-        if (d.yes) detail += `\nYES: our ${d.yes.our_prob}% vs Kalshi ${d.yes.kalshi_price}¢`;
-        if (d.no)  detail += `\nNO:  our ${d.no.our_prob}% vs Kalshi ${d.no.kalshi_price}¢`;
-        document.getElementById('recDetail').textContent = detail;
-        await loadHistory();
-    } catch(e) { alert('Error: ' + e); }
-}
-
-// ── Manual hourly predict ──────────────────────────────────────
+// ── Predict hourly ─────────────────────────────────────────────
 async function predictHourly() {
-    const override = document.getElementById('overridePriceH').value;
-    const body     = override ? {override_price: parseFloat(override)} : {};
+    const line = document.getElementById('kalshiLineH').value;
+    const body = line ? {kalshi_line: parseFloat(line)} : {};
     try {
         const d = await post('/api/hourly', body);
         if (d.error) { alert('Error: ' + d.error); return; }
@@ -301,15 +394,31 @@ async function predictHourly() {
 }
 
 function updateDirH(d) {
-    const dir = document.getElementById('dirH');
-    dir.textContent = d.direction;
-    dir.className   = 'big-dir ' + d.direction;
-    document.getElementById('confH').textContent   = d.confidence + '%';
-    document.getElementById('barH').style.width    = d.confidence + '%';
-    document.getElementById('targetH').textContent = 'Target: ' + d.target_time + '  |  BTC: $' + Number(d.open_price).toLocaleString();
-    document.getElementById('tAgg').textContent    = d.tiers.aggressive.formatted;
-    document.getElementById('tMod').textContent    = d.tiers.modest.formatted;
-    document.getElementById('tSafe').textContent   = d.tiers.safe.formatted;
+    document.getElementById('predictedPrice').textContent =
+        d.predicted_price ? '$' + fmt2(d.predicted_price) : '--';
+
+    const refEl = document.getElementById('refPriceH');
+    refEl.style.display = 'block';
+    const refP = d.kalshi_line || d.ref_price || d.current_price || 0;
+    refEl.textContent = '📍 Reference: $' + fmt2(refP);
+
+    const move    = d.predicted_move || 0;
+    const moveStr = (move >= 0 ? '+' : '-') + '$' +
+        Math.abs(move).toLocaleString('en-US', {maximumFractionDigits: 0});
+    const cls   = move >= 0 ? 'move-up' : 'move-down';
+    const arrow = move >= 0 ? '▲' : '▼';
+    document.getElementById('moveBadgeWrap').innerHTML =
+        `<span class="move-badge ${cls}">${arrow} ${moveStr} predicted move</span>`;
+
+    document.getElementById('targetH').textContent =
+        'Predicted price at: ' + (d.target_time || 'Next hour');
+
+    document.getElementById('tSafe').textContent =
+        d.tiers ? d.tiers.safe.formatted       : '--';
+    document.getElementById('tMod').textContent  =
+        d.tiers ? d.tiers.modest.formatted     : '--';
+    document.getElementById('tAgg').textContent  =
+        d.tiers ? d.tiers.aggressive.formatted : '--';
 }
 
 // ── Load latest auto-predictions ───────────────────────────────
@@ -318,29 +427,61 @@ async function loadLatest() {
         const d = await get('/api/latest');
         if (d.min15 && d.min15.direction) {
             updateDir15({
-                id:         d.min15.id,
-                direction:  d.min15.direction,
-                confidence: d.min15.confidence,
-                up_prob:    d.min15.up_prob,
-                open_price: d.min15.open_price,
-                target_time: d.min15.target_time || 'Auto',
-                auto: true
+                id:              d.min15.id,
+                direction:       d.min15.direction,
+                confidence:      d.min15.confidence,
+                up_prob:         d.min15.up_prob,
+                live_price:      d.min15.open_price,
+                kalshi_line:     d.min15.kalshi_line,
+                reference_price: d.min15.reference_price,
+                target_time:     d.min15.target_time || 'next window',
+                window:          d.min15.window_start || '',
+                cached:          false
             });
         }
-        if (d.hourly && d.hourly.direction) {
+        if (d.hourly && d.hourly.predicted_price) {
             updateDirH({
-                direction:  d.hourly.direction,
-                confidence: d.hourly.confidence,
-                open_price: d.hourly.open_price,
-                target_time: d.hourly.target_time || 'Auto',
+                predicted_price: d.hourly.predicted_price,
+                predicted_move:  d.hourly.predicted_move,
+                kalshi_line:     d.hourly.kalshi_line,
+                ref_price:       d.hourly.ref_price,
+                current_price:   d.hourly.current_price,
+                target_time:     d.hourly.target_time || 'next hour',
                 tiers: {
-                    aggressive: {formatted: d.hourly.aggressive ? '$' + Number(d.hourly.aggressive).toLocaleString() : '--'},
-                    modest:     {formatted: d.hourly.modest     ? '$' + Number(d.hourly.modest).toLocaleString()     : '--'},
-                    safe:       {formatted: d.hourly.safe       ? '$' + Number(d.hourly.safe).toLocaleString()       : '--'}
+                    safe: {
+                        formatted: d.hourly.safe
+                            ? '$' + Number(d.hourly.safe).toLocaleString()
+                            : '--'
+                    },
+                    modest: {
+                        formatted: d.hourly.modest
+                            ? '$' + Number(d.hourly.modest).toLocaleString()
+                            : '--'
+                    },
+                    aggressive: {
+                        formatted: d.hourly.aggressive
+                            ? '$' + Number(d.hourly.aggressive).toLocaleString()
+                            : '--'
+                    }
                 }
             });
         }
     } catch(e) { console.error('Latest error:', e); }
+}
+
+// ── Kalshi auto line display ───────────────────────────────────
+async function loadKalshiLine() {
+    try {
+        const d   = await get('/api/kalshi_line');
+        const box = document.getElementById('kalshiAutoBox');
+        const el  = document.getElementById('kalshiAutoLine');
+        if (d.line_15min) {
+            el.textContent    = '$' + fmt2(d.line_15min);
+            box.style.display = 'block';
+        } else {
+            box.style.display = 'none';
+        }
+    } catch(e) { console.error('Kalshi line error:', e); }
 }
 
 // ── Accuracy ───────────────────────────────────────────────────
@@ -348,14 +489,20 @@ async function loadAccuracy() {
     try {
         const d = await get('/api/accuracy');
         if (d.min15) {
-            document.getElementById('acc15').textContent  = d.min15.overall + '%';
-            document.getElementById('rec15').textContent  = d.min15.recent  + '%';
-            document.getElementById('edge15').textContent = (d.min15.edge >= 0 ? '+' : '') + d.min15.edge + '%';
+            document.getElementById('acc15').textContent =
+                d.min15.overall + '%';
+            document.getElementById('rec15').textContent =
+                d.min15.recent  + '%';
+            document.getElementById('edge15').textContent =
+                (d.min15.edge >= 0 ? '+' : '') + d.min15.edge + '%';
         }
         if (d.hourly) {
-            document.getElementById('accH').textContent = d.hourly.overall + '%';
-            document.getElementById('recH').textContent = d.hourly.recent  + '%';
-            document.getElementById('totH').textContent = d.hourly.total;
+            document.getElementById('accH500').textContent  =
+                d.hourly.within_500  + '%';
+            document.getElementById('accH1000').textContent =
+                d.hourly.within_1000 + '%';
+            document.getElementById('totH').textContent     =
+                d.hourly.total;
         }
     } catch(e) { console.error('Accuracy error:', e); }
 }
@@ -368,26 +515,32 @@ async function loadWhale() {
             document.getElementById('wSent').textContent = d.data.sentiment;
             document.getElementById('wBuy').textContent  = d.data.buy_vol;
             document.getElementById('wSell').textContent = d.data.sell_vol;
-            document.getElementById('wAcc').textContent  = d.data.accumulating ? '✓ YES' : '✗ NO';
+            document.getElementById('wAcc').textContent  =
+                d.data.accumulating ? '✓ YES' : '✗ NO';
         }
     } catch(e) { console.error('Whale error:', e); }
 }
 
-// ── History ────────────────────────────────────────────────────
+// ── 15-min History ─────────────────────────────────────────────
 async function loadHistory() {
     try {
         const d    = await get('/api/history');
         const rows = d.min15 || [];
         const tb   = document.getElementById('histBody');
         if (rows.length === 0) {
-            tb.innerHTML = '<tr><td colspan="9" style="opacity:.4;text-align:center;padding:20px">No predictions yet</td></tr>';
+            tb.innerHTML =
+                '<tr><td colspan="6" style="opacity:.4;text-align:center;' +
+                'padding:20px">No predictions yet</td></tr>';
             return;
         }
         tb.innerHTML = '';
         rows.forEach(r => {
             const tr   = tb.insertRow();
             const time = r.timestamp
-                ? new Date(r.timestamp).toLocaleTimeString('en-US',{timeZone:'America/Chicago',hour:'2-digit',minute:'2-digit'})
+                ? new Date(r.timestamp).toLocaleTimeString('en-US', {
+                    timeZone: 'America/Chicago',
+                    hour: '2-digit', minute: '2-digit'
+                  })
                 : '--';
             const res = r.correct === 1
                 ? '<span class="correct">✓ WIN</span>'
@@ -397,42 +550,104 @@ async function loadHistory() {
             const dir = r.direction
                 ? `<span class="${r.direction.toLowerCase()}">${r.direction}</span>`
                 : '--';
+            const refP = r.kalshi_line
+                ? '$' + fmt2(r.kalshi_line)
+                : '$' + fmt2(r.open_price || 0);
             tr.innerHTML = `
                 <td>${time}</td>
-                <td>${r.open_price  ? '$' + Number(r.open_price).toLocaleString()  : '--'}</td>
+                <td>${refP}</td>
                 <td>${dir}</td>
-                <td>${r.confidence  ? r.confidence + '%' : '--'}</td>
-                <td>${r.close_price ? '$' + Number(r.close_price).toLocaleString() : '--'}</td>
-                <td>${res}</td>
-                <td>${r.kalshi_yes  ? r.kalshi_yes + '¢' : '--'}</td>
-                <td>${r.kalshi_no   ? r.kalshi_no  + '¢' : '--'}</td>
-                <td>${r.recommendation || '--'}</td>`;
+                <td>${r.confidence ? r.confidence + '%' : '--'}</td>
+                <td>${r.close_price ? '$' + fmt2(r.close_price) : '--'}</td>
+                <td>${res}</td>`;
         });
     } catch(e) { console.error('History error:', e); }
 }
 
-// ── Helpers ────────────────────────────────────────────────────
-async function get(url) {
-    const r = await fetch(url); return r.json();
+// ── Hourly History ─────────────────────────────────────────────
+async function loadHourlyHistory() {
+    try {
+        const d    = await get('/api/history');
+        const rows = d.hourly || [];
+        const tb   = document.getElementById('histHourly');
+        if (rows.length === 0) {
+            tb.innerHTML =
+                '<tr><td colspan="8" style="opacity:.4;text-align:center;' +
+                'padding:20px">No predictions yet</td></tr>';
+            return;
+        }
+        tb.innerHTML = '';
+        rows.forEach(r => {
+            const tr   = tb.insertRow();
+            const time = r.timestamp
+                ? new Date(r.timestamp).toLocaleTimeString('en-US', {
+                    timeZone: 'America/Chicago',
+                    hour: '2-digit', minute: '2-digit'
+                  })
+                : '--';
+            const refP = r.kalshi_line || r.ref_price || r.current_price;
+            const err  = (r.actual_price && r.predicted_price)
+                ? '$' + Math.abs(
+                    r.actual_price - r.predicted_price).toFixed(0)
+                : '--';
+            tr.innerHTML = `
+                <td>${time}</td>
+                <td>${refP ? '$' + fmt2(refP) : '--'}</td>
+                <td>${r.predicted_price
+                    ? '$' + fmt2(r.predicted_price) : '--'}</td>
+                <td>${r.safe
+                    ? '$' + Number(r.safe).toLocaleString() : '--'}</td>
+                <td>${r.modest
+                    ? '$' + Number(r.modest).toLocaleString() : '--'}</td>
+                <td>${r.aggressive
+                    ? '$' + Number(r.aggressive).toLocaleString() : '--'}</td>
+                <td>${r.actual_price
+                    ? '$' + fmt2(r.actual_price) : '--'}</td>
+                <td>${err}</td>`;
+        });
+    } catch(e) { console.error('Hourly history error:', e); }
 }
+
+// ── Helpers ────────────────────────────────────────────────────
+function fmt2(n) {
+    return Number(n).toLocaleString('en-US', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+    });
+}
+
+async function get(url) {
+    const r = await fetch(url);
+    return r.json();
+}
+
 async function post(url, body) {
     const r = await fetch(url, {
-        method:'POST',
-        headers:{'Content-Type':'application/json'},
-        body: JSON.stringify(body)
+        method:  'POST',
+        headers: {'Content-Type': 'application/json'},
+        body:    JSON.stringify(body)
     });
     return r.json();
 }
 
-// ── Auto refresh ───────────────────────────────────────────────
-setInterval(() => { loadAccuracy(); loadWhale(); loadHistory(); loadLatest(); }, 60000);
+// ── Auto refresh every 60 seconds ─────────────────────────────
+setInterval(() => {
+    loadAccuracy();
+    loadWhale();
+    loadHistory();
+    loadHourlyHistory();
+    loadLatest();
+    loadKalshiLine();
+}, 60000);
 
 // ── On page load ───────────────────────────────────────────────
 checkTrainStatus();
 loadAccuracy();
 loadWhale();
 loadHistory();
+loadHourlyHistory();
 loadLatest();
+loadKalshiLine();
 </script>
 </body>
 </html>
