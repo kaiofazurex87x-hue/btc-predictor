@@ -16,8 +16,9 @@
         .card h2{font-size:13px;opacity:.7;margin-bottom:14px;text-transform:uppercase;letter-spacing:.5px}
         .big-dir{font-size:52px;font-weight:900;text-align:center;margin:6px 0;letter-spacing:2px}
         .big-dir.UP{color:#10b981}.big-dir.DOWN{color:#ef4444}.big-dir.pending{color:#94a3b8}
-        .big-price{font-size:36px;font-weight:900;text-align:center;margin:10px 0;color:#667eea}
-        .conf{text-align:center;font-size:22px;font-weight:bold;margin-bottom:4px}
+        .big-price{font-size:38px;font-weight:900;text-align:center;margin:10px 0;color:#667eea;letter-spacing:1px}
+        .conf{text-align:center;font-size:20px;font-weight:bold;margin-bottom:2px}
+        .conf-label{text-align:center;font-size:10px;opacity:.5;margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px}
         .ref-price{text-align:center;font-size:13px;color:#f59e0b;font-weight:bold;margin:6px 0}
         .sub{text-align:center;font-size:11px;opacity:.55;margin-bottom:6px;line-height:1.6}
         .bar-bg{background:rgba(255,255,255,0.12);border-radius:8px;height:10px;overflow:hidden;margin:10px 0}
@@ -26,10 +27,10 @@
         .stat{background:rgba(0,0,0,0.2);border-radius:10px;padding:10px;text-align:center}
         .sv{font-size:17px;font-weight:bold;color:#667eea}.sl{font-size:10px;opacity:.6;margin-top:3px}
         .tiers{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:12px 0}
-        .tier{border-radius:10px;padding:12px;text-align:center;background:rgba(0,0,0,0.25)}
+        .tier{border-radius:10px;padding:14px;text-align:center;background:rgba(0,0,0,0.25)}
         .tier .label{font-size:10px;opacity:.7;text-transform:uppercase;margin-bottom:4px}
-        .tier .tp{font-size:18px;font-weight:bold;margin-top:4px}
-        .tier .offset{font-size:9px;opacity:.45;margin-top:3px}
+        .tier .tp{font-size:20px;font-weight:bold;margin-top:6px}
+        .tier .offset{font-size:9px;opacity:.45;margin-top:4px}
         .tier.safe{border-top:3px solid #10b981}
         .tier.modest{border-top:3px solid #f59e0b}
         .tier.agg{border-top:3px solid #ef4444}
@@ -45,7 +46,8 @@
         .train-status{font-size:13px;opacity:.8}
         .locked-badge{display:inline-block;background:rgba(245,158,11,0.2);border:1px solid #f59e0b;color:#f59e0b;font-size:10px;padding:2px 8px;border-radius:10px;margin-left:6px}
         .kalshi-auto{background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.3);border-radius:8px;padding:8px 12px;font-size:12px;text-align:center;margin-bottom:10px;display:none}
-        .move-badge{padding:4px 12px;border-radius:20px;font-size:13px;font-weight:bold;margin:6px auto;display:block;text-align:center;width:fit-content}
+        .predicted-label{text-align:center;font-size:11px;opacity:.5;text-transform:uppercase;letter-spacing:.5px;margin-top:4px;margin-bottom:2px}
+        .move-badge{padding:4px 12px;border-radius:20px;font-size:13px;font-weight:bold;margin:4px auto;display:block;text-align:center;width:fit-content}
         .move-up{background:rgba(16,185,129,0.15);color:#10b981;border:1px solid #10b981}
         .move-down{background:rgba(239,68,68,0.15);color:#ef4444;border:1px solid #ef4444}
         table{width:100%;border-collapse:collapse;font-size:11px;margin-top:12px}
@@ -67,6 +69,7 @@
         </div>
     </header>
 
+    <!-- Train bar -->
     <div class="train-bar">
         <div>
             <div style="font-size:13px;font-weight:bold;margin-bottom:3px">
@@ -90,7 +93,6 @@
                       style="display:none">🔒 LOCKED</span>
             </h2>
 
-            <!-- Shows when Kalshi line was auto-fetched -->
             <div class="kalshi-auto" id="kalshiAutoBox">
                 🟢 Kalshi line auto-fetched:
                 <strong id="kalshiAutoLine">--</strong>
@@ -98,6 +100,7 @@
 
             <div class="big-dir pending" id="dir15">--</div>
             <div class="conf" id="conf15">--%</div>
+            <div class="conf-label">Confidence</div>
             <div class="ref-price" id="refPrice15" style="display:none"></div>
             <div class="sub" id="target15">Train models first</div>
             <div class="bar-bg">
@@ -119,9 +122,8 @@
                 </div>
             </div>
 
-            <!-- Only input: Kalshi line price -->
             <div class="section-label">
-                OPTIONAL — Enter the Kalshi line price you see right now:
+                OPTIONAL — Enter the Kalshi line price you see:
             </div>
             <div class="input-row">
                 <input type="number" id="kalshiLine"
@@ -129,18 +131,24 @@
                 <button onclick="predict15()">Predict</button>
             </div>
             <div class="hint">
-                Leave blank — app auto-fetches Kalshi line every 15 min
+                Leave blank — app auto-fetches every 15 min
             </div>
         </div>
 
-        <!-- ── Hourly card ── -->
+        <!-- ── Hourly price targets card ── -->
         <div class="card">
-            <h2>📊 Hourly Price Prediction</h2>
+            <h2>📊 Hourly Price Targets</h2>
 
-            <div class="sub" id="targetH">Train models first</div>
+            <div class="predicted-label">
+                Predicted BTC price at next hour
+            </div>
             <div class="big-price" id="predictedPrice">--</div>
-            <div class="ref-price" id="refPriceH" style="display:none"></div>
+            <div class="conf" id="confH">--%</div>
+            <div class="conf-label">Confidence</div>
             <div id="moveBadgeWrap" style="text-align:center;margin:4px 0"></div>
+            <div class="sub" id="targetH">
+                Auto-predicts every hour
+            </div>
 
             <div class="tiers">
                 <div class="tier safe">
@@ -173,19 +181,6 @@
                     <div class="sv" id="totH">--</div>
                     <div class="sl">Total Verified</div>
                 </div>
-            </div>
-
-            <!-- Only input: Kalshi line price -->
-            <div class="section-label">
-                OPTIONAL — Enter the Kalshi line price you see right now:
-            </div>
-            <div class="input-row">
-                <input type="number" id="kalshiLineH"
-                       placeholder="e.g. 68597.29" step="0.01">
-                <button onclick="predictHourly()">Predict</button>
-            </div>
-            <div class="hint">
-                Leave blank — app auto-fetches Kalshi hourly line
             </div>
         </div>
     </div>
@@ -221,7 +216,7 @@
                 <thead>
                     <tr>
                         <th>Time (CT)</th>
-                        <th>Kalshi Line $</th>
+                        <th>Reference $</th>
                         <th>Direction</th>
                         <th>Confidence</th>
                         <th>Close $</th>
@@ -248,7 +243,7 @@
                 <thead>
                     <tr>
                         <th>Time (CT)</th>
-                        <th>Reference $</th>
+                        <th>Current $</th>
                         <th>Predicted $</th>
                         <th>Safe</th>
                         <th>Modest</th>
@@ -276,7 +271,6 @@ let lastPredId = null;
 let lastUpProb = null;
 let trainPoll  = null;
 
-// ── Training ──────────────────────────────────────────────────
 async function checkTrainStatus() {
     try {
         const s      = await get('/api/train_status');
@@ -311,7 +305,7 @@ async function startTraining() {
     btn.textContent    = '⏳ Training...';
     btn.disabled       = true;
     status.textContent =
-        'Fetching 5000 BTC candles and training 6 models — please wait 3-5 min...';
+        'Fetching BTC data and training models — please wait 3-5 min...';
     try {
         await post('/api/retrain', {});
         trainPoll = setInterval(async () => {
@@ -331,11 +325,10 @@ async function startTraining() {
     } catch(e) {
         btn.textContent    = '🧠 Train Models';
         btn.disabled       = false;
-        status.textContent = '❌ Training failed — check Render logs';
+        status.textContent = '❌ Training failed — check logs';
     }
 }
 
-// ── Predict 15-min ─────────────────────────────────────────────
 async function predict15() {
     const line = document.getElementById('kalshiLine').value;
     const body = line ? {kalshi_line: parseFloat(line)} : {};
@@ -351,77 +344,55 @@ async function predict15() {
 function updateDir15(d) {
     lastPredId = d.id;
     lastUpProb = d.up_prob;
-
-    const dir = document.getElementById('dir15');
+    const dir  = document.getElementById('dir15');
     dir.textContent = d.direction;
     dir.className   = 'big-dir ' + d.direction;
-
     document.getElementById('conf15').textContent = d.confidence + '%';
     document.getElementById('bar15').style.width  = d.confidence + '%';
-
-    // Show the reference price — this is the Kalshi line or live BTC
     const refEl = document.getElementById('refPrice15');
     refEl.style.display = 'block';
     if (d.kalshi_line) {
         refEl.textContent =
             '📍 Kalshi Line: $' + fmt2(d.kalshi_line) +
-            ' — prediction is UP or DOWN from this price';
+            ' — UP or DOWN from this price';
     } else {
         refEl.textContent =
             '📍 Live BTC: $' +
             fmt2(d.live_price || d.reference_price || 0) +
-            ' — prediction is UP or DOWN from this price';
+            ' — UP or DOWN from this price';
     }
-
-    // Show locked badge if this is within the same 15-min window
     document.getElementById('lockedBadge').style.display =
         d.cached ? 'inline-block' : 'none';
-
     document.getElementById('target15').textContent = d.cached
-        ? '🔒 Same window — prediction locked until ' + d.target_time
-        : 'Will BTC be above or below that price at ' + d.target_time + '?';
-}
-
-// ── Predict hourly ─────────────────────────────────────────────
-async function predictHourly() {
-    const line = document.getElementById('kalshiLineH').value;
-    const body = line ? {kalshi_line: parseFloat(line)} : {};
-    try {
-        const d = await post('/api/hourly', body);
-        if (d.error) { alert('Error: ' + d.error); return; }
-        updateDirH(d);
-    } catch(e) { alert('Error: ' + e); }
+        ? '🔒 Locked until ' + d.target_time
+        : 'Prediction for: ' + d.target_time;
 }
 
 function updateDirH(d) {
     document.getElementById('predictedPrice').textContent =
         d.predicted_price ? '$' + fmt2(d.predicted_price) : '--';
-
-    const refEl = document.getElementById('refPriceH');
-    refEl.style.display = 'block';
-    const refP = d.kalshi_line || d.ref_price || d.current_price || 0;
-    refEl.textContent = '📍 Reference: $' + fmt2(refP);
-
+    document.getElementById('confH').textContent =
+        d.confidence ? d.confidence + '%' : '--%';
     const move    = d.predicted_move || 0;
     const moveStr = (move >= 0 ? '+' : '-') + '$' +
         Math.abs(move).toLocaleString('en-US', {maximumFractionDigits: 0});
     const cls   = move >= 0 ? 'move-up' : 'move-down';
     const arrow = move >= 0 ? '▲' : '▼';
     document.getElementById('moveBadgeWrap').innerHTML =
-        `<span class="move-badge ${cls}">${arrow} ${moveStr} predicted move</span>`;
-
+        `<span class="move-badge ${cls}">${arrow} ${moveStr} from current</span>`;
     document.getElementById('targetH').textContent =
-        'Predicted price at: ' + (d.target_time || 'Next hour');
-
+        'Predicted price at: ' + (d.target_time || 'next hour');
     document.getElementById('tSafe').textContent =
-        d.tiers ? d.tiers.safe.formatted       : '--';
-    document.getElementById('tMod').textContent  =
-        d.tiers ? d.tiers.modest.formatted     : '--';
-    document.getElementById('tAgg').textContent  =
-        d.tiers ? d.tiers.aggressive.formatted : '--';
+        d.safe ? '$' + Number(d.safe).toLocaleString() :
+        (d.tiers ? d.tiers.safe.formatted : '--');
+    document.getElementById('tMod').textContent =
+        d.modest ? '$' + Number(d.modest).toLocaleString() :
+        (d.tiers ? d.tiers.modest.formatted : '--');
+    document.getElementById('tAgg').textContent =
+        d.aggressive ? '$' + Number(d.aggressive).toLocaleString() :
+        (d.tiers ? d.tiers.aggressive.formatted : '--');
 }
 
-// ── Load latest auto-predictions ───────────────────────────────
 async function loadLatest() {
     try {
         const d = await get('/api/latest');
@@ -435,41 +406,15 @@ async function loadLatest() {
                 kalshi_line:     d.min15.kalshi_line,
                 reference_price: d.min15.reference_price,
                 target_time:     d.min15.target_time || 'next window',
-                window:          d.min15.window_start || '',
                 cached:          false
             });
         }
         if (d.hourly && d.hourly.predicted_price) {
-            updateDirH({
-                predicted_price: d.hourly.predicted_price,
-                predicted_move:  d.hourly.predicted_move,
-                kalshi_line:     d.hourly.kalshi_line,
-                ref_price:       d.hourly.ref_price,
-                current_price:   d.hourly.current_price,
-                target_time:     d.hourly.target_time || 'next hour',
-                tiers: {
-                    safe: {
-                        formatted: d.hourly.safe
-                            ? '$' + Number(d.hourly.safe).toLocaleString()
-                            : '--'
-                    },
-                    modest: {
-                        formatted: d.hourly.modest
-                            ? '$' + Number(d.hourly.modest).toLocaleString()
-                            : '--'
-                    },
-                    aggressive: {
-                        formatted: d.hourly.aggressive
-                            ? '$' + Number(d.hourly.aggressive).toLocaleString()
-                            : '--'
-                    }
-                }
-            });
+            updateDirH(d.hourly);
         }
     } catch(e) { console.error('Latest error:', e); }
 }
 
-// ── Kalshi auto line display ───────────────────────────────────
 async function loadKalshiLine() {
     try {
         const d   = await get('/api/kalshi_line');
@@ -484,7 +429,6 @@ async function loadKalshiLine() {
     } catch(e) { console.error('Kalshi line error:', e); }
 }
 
-// ── Accuracy ───────────────────────────────────────────────────
 async function loadAccuracy() {
     try {
         const d = await get('/api/accuracy');
@@ -507,7 +451,6 @@ async function loadAccuracy() {
     } catch(e) { console.error('Accuracy error:', e); }
 }
 
-// ── Whale ──────────────────────────────────────────────────────
 async function loadWhale() {
     try {
         const d = await get('/api/whale');
@@ -521,7 +464,6 @@ async function loadWhale() {
     } catch(e) { console.error('Whale error:', e); }
 }
 
-// ── 15-min History ─────────────────────────────────────────────
 async function loadHistory() {
     try {
         const d    = await get('/api/history');
@@ -564,7 +506,6 @@ async function loadHistory() {
     } catch(e) { console.error('History error:', e); }
 }
 
-// ── Hourly History ─────────────────────────────────────────────
 async function loadHourlyHistory() {
     try {
         const d    = await get('/api/history');
@@ -585,14 +526,14 @@ async function loadHourlyHistory() {
                     hour: '2-digit', minute: '2-digit'
                   })
                 : '--';
-            const refP = r.kalshi_line || r.ref_price || r.current_price;
-            const err  = (r.actual_price && r.predicted_price)
+            const err = (r.actual_price && r.predicted_price)
                 ? '$' + Math.abs(
                     r.actual_price - r.predicted_price).toFixed(0)
                 : '--';
             tr.innerHTML = `
                 <td>${time}</td>
-                <td>${refP ? '$' + fmt2(refP) : '--'}</td>
+                <td>${r.current_price
+                    ? '$' + fmt2(r.current_price) : '--'}</td>
                 <td>${r.predicted_price
                     ? '$' + fmt2(r.predicted_price) : '--'}</td>
                 <td>${r.safe
@@ -608,7 +549,6 @@ async function loadHourlyHistory() {
     } catch(e) { console.error('Hourly history error:', e); }
 }
 
-// ── Helpers ────────────────────────────────────────────────────
 function fmt2(n) {
     return Number(n).toLocaleString('en-US', {
         minimumFractionDigits: 2,
@@ -630,7 +570,6 @@ async function post(url, body) {
     return r.json();
 }
 
-// ── Auto refresh every 60 seconds ─────────────────────────────
 setInterval(() => {
     loadAccuracy();
     loadWhale();
@@ -640,7 +579,6 @@ setInterval(() => {
     loadKalshiLine();
 }, 60000);
 
-// ── On page load ───────────────────────────────────────────────
 checkTrainStatus();
 loadAccuracy();
 loadWhale();
