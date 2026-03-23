@@ -5,6 +5,7 @@ import threading
 import time
 import os
 import config
+from datetime import datetime, timedelta
 
 from predictor import BTCPredictor
 from tiered_predictor import TieredHourlyPredictor
@@ -14,7 +15,7 @@ from kalshi_api import KalshiAPI
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 os.chdir(BASE_DIR)
 
-# Create all persistent directories on the mounted volume
+# Create directories
 for d in [
     config.DATA_DIR,
     os.path.join(config.MODELS_DIR, 'predictor'),
@@ -27,16 +28,14 @@ app = Flask(__name__,
             template_folder=os.path.join(BASE_DIR, 'templates'))
 app.config['SECRET_KEY'] = config.SECRET_KEY
 
+# Initialize components
 predictor = BTCPredictor()
-tiered    = TieredHourlyPredictor()
-whale     = WhaleTracker()
+tiered = TieredHourlyPredictor()
+whale = WhaleTracker()
 
-try:
-    kalshi = KalshiAPI()
-    print("[Kalshi] Initialized OK")
-except Exception as e:
-    print(f"[Kalshi] Init failed: {e}")
-    kalshi = None
+# Initialize Kalshi API (with auto-fetch capability)
+kalshi = KalshiAPI()
+predictor.set_kalshi_api(kalshi)  # Connect for automatic verification
 
 login_manager = LoginManager()
 login_manager.init_app(app)
@@ -64,8 +63,7 @@ def verify_pw(pw):
 
 def get_kalshi_15min():
     try:
-        if kalshi:
-            return kalshi.get_btc_15min_line()
+        return kalshi.get_btc_15min_line()
     except Exception as e:
         print(f"[Kalshi] 15-min fetch error: {e}")
     return None
@@ -73,8 +71,7 @@ def get_kalshi_15min():
 
 def get_kalshi_hourly():
     try:
-        if kalshi:
-            return kalshi.get_btc_hourly_line()
+        return kalshi.get_btc_hourly_line()
     except Exception as e:
         print(f"[Kalshi] Hourly fetch error: {e}")
     return None
@@ -83,27 +80,37 @@ def get_kalshi_hourly():
 # ── Auto-predict every 15 minutes ─────────────────────────────
 def auto_predict_loop():
     import pytz
-    from datetime import datetime, timedelta
     TZ = pytz.timezone(config.TIMEZONE)
+    
     while not predictor.is_trained:
         time.sleep(30)
+    
     while True:
-        now      = datetime.now(pytz.utc).astimezone(TZ)
-        next_min = ((now.minute // 15) + 1) * 15
-        if next_min >= 60:
-            next_run = now.replace(
-                minute=0, second=2, microsecond=0) + timedelta(hours=1)
+        now = datetime.now(pytz.utc).astimezone(TZ)
+        current_minute = now.minute
+        
+        if current_minute < 15:
+            next_minute = 15
+        elif current_minute < 30:
+            next_minute = 30
+        elif current_minute < 45:
+            next_minute = 45
         else:
-            next_run = now.replace(
-                minute=next_min, second=2, microsecond=0)
-        wait = (next_run - now).total_seconds()
+            next_minute = 0
+            now = now + timedelta(hours=1)
+        
+        next_run = now.replace(minute=next_minute, second=5, microsecond=0)
+        wait = (next_run - datetime.now(pytz.utc).astimezone(TZ)).total_seconds()
+        
         time.sleep(max(wait, 1))
+        
         try:
-            line   = get_kalshi_15min()
+            line = get_kalshi_15min()
             result = predictor.predict(kalshi_line=line, force=True)
-            src    = f"Kalshi line ${line}" if line else "live BTC price"
-            print(f"[Auto 15-min] {result['direction']} "
-                  f"{result['confidence']}% | ref: {src}")
+            if 'direction' in result:
+                src = f"Kalshi line ${line}" if line else "live BTC price"
+                print(f"[Auto 15-min] {result['direction']} "
+                      f"{result['confidence']:.0f}% | ref: {src}")
         except Exception as e:
             print(f"[Auto 15-min] Error: {e}")
 
@@ -111,38 +118,83 @@ def auto_predict_loop():
 # ── Auto-predict every hour ────────────────────────────────────
 def auto_hourly_loop():
     import pytz
-    from datetime import datetime, timedelta
     TZ = pytz.timezone(config.TIMEZONE)
+    
     while not tiered.is_trained:
         time.sleep(30)
+    
     while True:
-        now      = datetime.now(pytz.utc).astimezone(TZ)
-        next_run = now.replace(
-            minute=0, second=5, microsecond=0) + timedelta(hours=1)
-        wait = (next_run - now).total_seconds()
+        now = datetime.now(pytz.utc).astimezone(TZ)
+        next_run = now.replace(minute=0, second=10, microsecond=0) + timedelta(hours=1)
+        wait = (next_run - datetime.now(pytz.utc).astimezone(TZ)).total_seconds()
+        
         time.sleep(max(wait, 1))
+        
         try:
             result = tiered.predict(force=True)
-            print(f"[Auto Hourly] "
-                  f"Predicted: ${result['predicted_price']} | "
-                  f"Safe: {result['tiers']['safe']['formatted']} | "
-                  f"Modest: {result['tiers']['modest']['formatted']} | "
-                  f"Aggressive: {result['tiers']['aggressive']['formatted']}")
+            if 'tiers' in result:
+                print(f"[Auto Hourly] Safe: {result['tiers']['safe']['formatted']} | "
+                      f"Modest: {result['tiers']['modest']['formatted']} | "
+                      f"Aggressive: {result['tiers']['aggressive']['formatted']}")
         except Exception as e:
             print(f"[Auto Hourly] Error: {e}")
 
 
-# ── Verify every 2 minutes ─────────────────────────────────────
+# ── Verify predictions (Auto with manual fallback) ────────────
 def verify_loop():
+    import pytz
+    TZ = pytz.timezone(config.TIMEZONE)
+    
     while True:
-        time.sleep(120)
+        now = datetime.now(pytz.utc).astimezone(TZ)
+        current_minute = now.minute
+        
+        # Calculate next verification time (at :00, :15, :30, :45)
+        if current_minute < 15:
+            next_minute = 15
+        elif current_minute < 30:
+            next_minute = 30
+        elif current_minute < 45:
+            next_minute = 45
+        else:
+            next_minute = 0
+            now = now + timedelta(hours=1)
+        
+        next_verify = now.replace(minute=next_minute, second=10, microsecond=0)
+        wait = (next_verify - datetime.now(pytz.utc).astimezone(TZ)).total_seconds()
+        
+        time.sleep(max(wait, 1))
+        
         try:
+            # This will try Kalshi first, then price, then leave for manual
             n15 = predictor.verify_pending()
             nhr = tiered.verify_pending()
             if n15 or nhr:
-                print(f"[Verify] 15-min: {n15}  Hourly: {nhr}")
+                print(f"[Verify] Verified 15-min: {n15}, Hourly: {nhr}")
         except Exception as e:
             print(f"[Verify] Error: {e}")
+
+
+# ── Price updater ──────────────────────────────────────────────
+def price_update_loop():
+    """Update BTC price every minute for accurate verification"""
+    import requests
+    
+    while True:
+        try:
+            url = "https://api.coingecko.com/api/v3/simple/price"
+            params = {'ids': 'bitcoin', 'vs_currencies': 'usd'}
+            response = requests.get(url, params=params, timeout=5)
+            if response.status_code == 200:
+                data = response.json()
+                price = data['bitcoin']['usd']
+                predictor.update_price(price)
+                tiered.update_price(price)
+                print(f"[Price] BTC: ${price:,.2f}")
+        except Exception as e:
+            print(f"[Price] Error: {e}")
+        
+        time.sleep(60)  # Update every minute
 
 
 # ── Prune every 6 hours ────────────────────────────────────────
@@ -151,17 +203,22 @@ def prune_loop():
         time.sleep(6 * 3600)
         try:
             predictor.prune_old_data()
+            tiered.prune_old_data()
+            print("[Prune] Old data pruned")
         except Exception as e:
             print(f"[Prune] Error: {e}")
 
 
+# Start all threads
 threading.Thread(target=auto_predict_loop, daemon=True).start()
-threading.Thread(target=auto_hourly_loop,  daemon=True).start()
-threading.Thread(target=verify_loop,       daemon=True).start()
-threading.Thread(target=prune_loop,        daemon=True).start()
+threading.Thread(target=auto_hourly_loop, daemon=True).start()
+threading.Thread(target=verify_loop, daemon=True).start()
+threading.Thread(target=price_update_loop, daemon=True).start()
+threading.Thread(target=prune_loop, daemon=True).start()
 
 
-# ── Auth ───────────────────────────────────────────────────────
+# ── Routes ───────────────────────────────────────────────────────
+
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
@@ -199,16 +256,41 @@ def api_predict():
 @app.route('/api/kalshi_check', methods=['POST'])
 @login_required
 def api_kalshi_check():
+    """Manual Kalshi entry - optional override"""
     try:
-        body    = request.get_json(silent=True) or {}
+        body = request.get_json(silent=True) or {}
         pred_id = body.get('pred_id')
-        up_prob = float(body.get('up_prob'))
-        yes     = body.get('kalshi_yes')
-        no      = body.get('kalshi_no')
-        if yes is not None: yes = float(yes)
-        if no  is not None: no  = float(no)
+        up_prob = float(body.get('up_prob', 0.5))
+        yes = body.get('kalshi_yes')
+        no = body.get('kalshi_no')
+        if yes is not None:
+            yes = float(yes)
+        if no is not None:
+            no = float(no)
         return jsonify(predictor.kalshi_check(
             pred_id, up_prob, kalshi_yes=yes, kalshi_no=no))
+    except Exception as e:
+        return jsonify({'error': str(e)})
+
+
+@app.route('/api/manual_verify', methods=['POST'])
+@login_required
+def api_manual_verify():
+    """Manual direction verification - optional override"""
+    try:
+        body = request.get_json(silent=True) or {}
+        pred_id = body.get('pred_id')
+        actual_direction = body.get('actual_direction')  # 'UP' or 'DOWN'
+        
+        if not pred_id or actual_direction not in ['UP', 'DOWN']:
+            return jsonify({'error': 'Invalid input'})
+        
+        success, was_correct = predictor.manual_verify(pred_id, actual_direction)
+        
+        return jsonify({
+            'success': success,
+            'correct': was_correct if success else None
+        })
     except Exception as e:
         return jsonify({'error': str(e)})
 
@@ -227,7 +309,7 @@ def api_hourly():
 def api_kalshi_line():
     try:
         return jsonify({
-            'line_15min':  get_kalshi_15min(),
+            'line_15min': get_kalshi_15min(),
             'line_hourly': get_kalshi_hourly()
         })
     except Exception as e:
@@ -239,8 +321,9 @@ def api_kalshi_line():
 def api_latest():
     try:
         return jsonify({
-            'min15':  (predictor.get_history(1) or [None])[0],
-            'hourly': (tiered.get_history(1)    or [None])[0]
+            'price': predictor.current_price,
+            'min15': (predictor.get_history(1) or [None])[0],
+            'hourly': (tiered.get_history(1) or [None])[0]
         })
     except Exception as e:
         return jsonify({'error': str(e)})
@@ -250,7 +333,7 @@ def api_latest():
 @login_required
 def api_accuracy():
     return jsonify({
-        'min15':  predictor.get_accuracy(),
+        'min15': predictor.get_accuracy(),
         'hourly': tiered.get_accuracy()
     })
 
@@ -259,8 +342,18 @@ def api_accuracy():
 @login_required
 def api_history():
     return jsonify({
-        'min15':  predictor.get_history(30),
+        'min15': predictor.get_history(30),
         'hourly': tiered.get_history(10)
+    })
+
+
+@app.route('/api/pending')
+@login_required
+def api_pending():
+    """Get all pending predictions that need manual input"""
+    return jsonify({
+        '15min': predictor.get_pending(),
+        'hourly': tiered.get_pending()
     })
 
 
@@ -269,7 +362,7 @@ def api_history():
 def api_whale():
     try:
         return jsonify({
-            'data':   whale.track(),
+            'data': whale.track(),
             'signal': whale.get_signal()
         })
     except Exception as e:
@@ -284,8 +377,7 @@ def api_retrain():
             predictor.train()
             tiered.train()
         threading.Thread(target=run, daemon=True).start()
-        return jsonify({'success': True,
-                        'message': 'Training started. Takes 3-5 minutes.'})
+        return jsonify({'success': True, 'message': 'Training started'})
     except Exception as e:
         return jsonify({'error': str(e)})
 
@@ -294,7 +386,7 @@ def api_retrain():
 @login_required
 def train_status():
     return jsonify({
-        'min15_trained':  predictor.is_trained,
+        'min15_trained': predictor.is_trained,
         'hourly_trained': tiered.is_trained
     })
 
