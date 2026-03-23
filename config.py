@@ -1,32 +1,21 @@
+"""
+Configuration file - Change these values
+"""
+
 import os
+import secrets
 
-# ── Auth ──────────────────────────────────────────────────────
-ADMIN_PASSWORD_HASH = os.environ.get("ADMIN_PASSWORD_HASH", "REPLACE_ME")
-SECRET_KEY          = os.environ.get("SECRET_KEY", "change-me-in-production")
+# Generate a secure secret key (change this!)
+SECRET_KEY = os.environ.get('SECRET_KEY', secrets.token_hex(32))
 
-# ── Timezone ──────────────────────────────────────────────────
-TIMEZONE = "America/Chicago"
+# Admin password hash - generate with:
+# python -c "import bcrypt; print(bcrypt.hashpw(b'your_password', bcrypt.gensalt()).decode())"
+ADMIN_PASSWORD_HASH = os.environ.get('ADMIN_PASSWORD_HASH', 'REPLACE_ME')
 
-# ── Kalshi ────────────────────────────────────────────────────
-KALSHI_API_KEY     = os.environ.get("KALSHI_API_KEY", "")
-KALSHI_PRIVATE_KEY = os.environ.get("KALSHI_PRIVATE_KEY", "")
+# Directories
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+DATA_DIR = os.path.join(BASE_DIR, 'data')
+MODELS_DIR = os.path.join(BASE_DIR, 'models')
 
-# ── Kalshi edge threshold ─────────────────────────────────────
-MIN_EDGE_CENTS = 10
-
-# ── Self-learning ─────────────────────────────────────────────
-RETRAIN_AFTER_N_VERIFIED = 50
-AUTO_PRUNE_DAYS          = 90
-PRUNE_MIN_ACCURACY       = 70
-
-# ── Hourly tier offsets ───────────────────────────────────────
-ROUND_TO          = 100
-SAFE_OFFSET       = 800
-MODEST_OFFSET     = 500
-AGGRESSIVE_OFFSET = 100
-
-# ── Persistent storage ────────────────────────────────────────
-# Points to Fly.io mounted volume so everything
-# survives app restarts and redeploys forever
-DATA_DIR   = os.environ.get("DATA_DIR", "data")
-MODELS_DIR = os.path.join(DATA_DIR, "models")
+# Timezone
+TIMEZONE = 'US/Eastern'
