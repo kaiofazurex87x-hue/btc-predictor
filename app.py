@@ -48,12 +48,19 @@ def load_user(user_id):
 
 
 def verify_password(password):
-    """Verify admin password"""
+    """Verify admin password using bcrypt hash from config"""
     if not config.ADMIN_PASSWORD_HASH:
+        print("[Auth] No password hash set!")
         return False
     try:
-        return bcrypt.checkpw(password.encode(), config.ADMIN_PASSWORD_HASH.encode())
-    except Exception:
+        result = bcrypt.checkpw(password.encode(), config.ADMIN_PASSWORD_HASH.encode())
+        if result:
+            print("[Auth] Login successful")
+        else:
+            print("[Auth] Login failed - wrong password")
+        return result
+    except Exception as e:
+        print(f"[Auth] Error: {e}")
         return False
 
 
@@ -110,7 +117,8 @@ def auto_predict_loop():
             line = get_kalshi_15min()
             result = predictor.predict(kalshi_line=line)
             if 'direction' in result:
-                print(f"[15-min] {result['direction']} {result['confidence']:.0f}%")
+                src = "Kalshi" if line else "Price"
+                print(f"[15-min] {result['direction']} {result['confidence']:.0f}% ({src})")
         except Exception as e:
             print(f"[Auto] Error: {e}")
 
