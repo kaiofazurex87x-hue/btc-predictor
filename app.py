@@ -6,6 +6,7 @@ import time
 import os
 import config
 from datetime import datetime, timedelta
+import pytz
 
 from predictor import BTCPredictor
 from tiered_predictor import TieredHourlyPredictor
@@ -15,7 +16,7 @@ from kalshi_api import KalshiAPI
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 os.chdir(BASE_DIR)
 
-# Create directories
+# Create all persistent directories
 for d in [
     config.DATA_DIR,
     os.path.join(config.MODELS_DIR, 'predictor'),
@@ -29,13 +30,13 @@ app = Flask(__name__,
 app.config['SECRET_KEY'] = config.SECRET_KEY
 
 # Initialize components
-predictor = BTCPredictor()
-tiered = TieredHourlyPredictor()
+predictor = BTCPredictor(data_dir=config.DATA_DIR)
+tiered = TieredHourlyPredictor(data_dir=config.DATA_DIR)
 whale = WhaleTracker()
 
-# Initialize Kalshi API (with auto-fetch capability)
+# Initialize Kalshi API
 kalshi = KalshiAPI()
-predictor.set_kalshi_api(kalshi)  # Connect for automatic verification
+predictor.set_kalshi_api(kalshi)
 
 login_manager = LoginManager()
 login_manager.init_app(app)
@@ -79,7 +80,6 @@ def get_kalshi_hourly():
 
 # ── Auto-predict every 15 minutes ─────────────────────────────
 def auto_predict_loop():
-    import pytz
     TZ = pytz.timezone(config.TIMEZONE)
     
     while not predictor.is_trained:
@@ -117,7 +117,6 @@ def auto_predict_loop():
 
 # ── Auto-predict every hour ────────────────────────────────────
 def auto_hourly_loop():
-    import pytz
     TZ = pytz.timezone(config.TIMEZONE)
     
     while not tiered.is_trained:
@@ -142,14 +141,12 @@ def auto_hourly_loop():
 
 # ── Verify predictions (Auto with manual fallback) ────────────
 def verify_loop():
-    import pytz
     TZ = pytz.timezone(config.TIMEZONE)
     
     while True:
         now = datetime.now(pytz.utc).astimezone(TZ)
         current_minute = now.minute
         
-        # Calculate next verification time (at :00, :15, :30, :45)
         if current_minute < 15:
             next_minute = 15
         elif current_minute < 30:
@@ -166,7 +163,6 @@ def verify_loop():
         time.sleep(max(wait, 1))
         
         try:
-            # This will try Kalshi first, then price, then leave for manual
             n15 = predictor.verify_pending()
             nhr = tiered.verify_pending()
             if n15 or nhr:
@@ -177,7 +173,6 @@ def verify_loop():
 
 # ── Price updater ──────────────────────────────────────────────
 def price_update_loop():
-    """Update BTC price every minute for accurate verification"""
     import requests
     
     while True:
@@ -280,7 +275,7 @@ def api_manual_verify():
     try:
         body = request.get_json(silent=True) or {}
         pred_id = body.get('pred_id')
-        actual_direction = body.get('actual_direction')  # 'UP' or 'DOWN'
+        actual_direction = body.get('actual_direction')
         
         if not pred_id or actual_direction not in ['UP', 'DOWN']:
             return jsonify({'error': 'Invalid input'})
