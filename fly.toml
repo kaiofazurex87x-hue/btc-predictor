@@ -6,7 +6,7 @@ app = "btc-predictor"
 
 [env]
   FLASK_APP = "app.py"
-  SECRET_KEY = "your-secret-key-here"
+  TIMEZONE = "US/Eastern"
 
 [[services]]
   internal_port = 5000
@@ -28,3 +28,7 @@ app = "btc-predictor"
     interval = 10000
     timeout = 2000
     grace_period = "30s"
+
+[[mounts]]
+  source = "btc_data"
+  destination = "/app/data"
