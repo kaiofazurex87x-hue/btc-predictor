@@ -16,9 +16,9 @@ class BTCPredictor:
         self.is_trained = False
         
         # Store predictions
-        self.predictions = deque(maxlen=2000)
+        self.predictions = deque(maxlen=5000)
         self.pending_predictions = {}  # key: start_time -> prediction object
-        self.accuracy_history = deque(maxlen=100)
+        self.accuracy_history = deque(maxlen=500)
         
         # Stats
         self.total_predictions = 0
@@ -28,6 +28,9 @@ class BTCPredictor:
         
         # Kalshi API (will be set later)
         self.kalshi_api = None
+        
+        # Create data directory if it doesn't exist
+        os.makedirs(data_dir, exist_ok=True)
         
         # Load existing data
         self.load_data()
@@ -50,6 +53,7 @@ class BTCPredictor:
     def update_price(self, price):
         """Update current price from external source"""
         self.current_price = price
+        self.last_price = price
         return price
     
     def get_price_at_time(self, target_time):
@@ -403,10 +407,18 @@ class BTCPredictor:
         }
     
     def prune_old_data(self):
-        """Keep only recent data"""
+        """Keep only recent data (last 30 days)"""
         cutoff = datetime.now() - timedelta(days=30)
-        self.predictions = deque([p for p in self.predictions if p['start_time'] > cutoff], maxlen=2000)
+        self.predictions = deque([p for p in self.predictions if p['start_time'] > cutoff], maxlen=5000)
+        
+        # Also clean up old pending predictions (over 24 hours)
+        old_cutoff = datetime.now() - timedelta(hours=24)
+        for pred_id, pred in list(self.pending_predictions.items()):
+            if pred['start_time'] < old_cutoff:
+                del self.pending_predictions[pred_id]
+        
         self.save_data()
+        print(f"[Prune] Kept {len(self.predictions)} predictions")
     
     def load_data(self):
         """Load saved data"""
@@ -415,12 +427,14 @@ class BTCPredictor:
             if os.path.exists(data_file):
                 with open(data_file, 'rb') as f:
                     data = pickle.load(f)
-                    self.predictions = data.get('predictions', deque(maxlen=2000))
+                    self.predictions = data.get('predictions', deque(maxlen=5000))
                     self.pending_predictions = data.get('pending', {})
                     self.total_predictions = data.get('total', 0)
                     self.correct_predictions = data.get('correct', 0)
-                    self.accuracy_history = data.get('history', deque(maxlen=100))
+                    self.accuracy_history = data.get('history', deque(maxlen=500))
                 print(f"📚 Loaded {len(self.predictions)} predictions, {len(self.pending_predictions)} pending")
+            else:
+                print(f"📚 No existing data found. Starting fresh.")
         except Exception as e:
             print(f"⚠️ Could not load data: {e}")
     
@@ -437,5 +451,7 @@ class BTCPredictor:
             }
             with open(data_file, 'wb') as f:
                 pickle.dump(data, f)
+            # Uncomment for debugging:
+            # print(f"💾 Saved: {len(self.predictions)} preds, {len(self.pending_predictions)} pending")
         except Exception as e:
             print(f"⚠️ Could not save data: {e}")
