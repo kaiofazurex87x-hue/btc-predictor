@@ -125,22 +125,6 @@
             border-left: 3px solid #ffc107;
         }
         
-        .auto-badge {
-            background: #4caf50;
-            padding: 2px 8px;
-            border-radius: 12px;
-            font-size: 10px;
-            margin-left: 8px;
-        }
-        .pending-badge {
-            background: #ffc107;
-            color: #1a1a1a;
-            padding: 2px 8px;
-            border-radius: 12px;
-            font-size: 10px;
-            margin-left: 8px;
-        }
-        
         .success { color: #4caf50; }
         .error { color: #f44336; }
         .warning { color: #ffc107; }
@@ -150,47 +134,35 @@
             50% { opacity: 0.5; }
         }
         .loading { animation: pulse 1s infinite; }
-        
-        .verified-by {
-            font-size: 10px;
-            color: #888;
-            margin-top: 5px;
-        }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>⚡ BTC PREDICTOR <span style="font-size: 14px; color: #4caf50;">AUTO + MANUAL</span></h1>
+        <h1>⚡ BTC PREDICTOR</h1>
         
         <div class="grid">
-            <!-- 15-Minute Prediction Card -->
+            <!-- 15-Minute Prediction -->
             <div class="card price-card">
                 <h2>⏱️ 15-MINUTE PREDICTION</h2>
                 <div id="min15-time" style="color: #888; font-size: 0.9rem;">Waiting...</div>
                 <div class="prediction" id="min15-dir">⚪</div>
                 <div class="confidence-bar"><div class="confidence-fill" id="min15-bar"></div></div>
                 <div id="min15-conf" style="text-align: center; margin-top: 5px;">Confidence: --</div>
-                <div id="min15-verified" class="verified-by"></div>
                 
-                <!-- Manual Kalshi Entry (Optional Override) -->
                 <div class="manual-entry">
-                    <div style="margin-bottom: 10px; font-weight: bold;">📊 Optional Manual Override</div>
+                    <div style="margin-bottom: 10px; font-weight: bold;">📊 Manual Override (Kalshi)</div>
                     <div style="display: flex; gap: 10px;">
-                        <input type="text" id="kalshi-yes" placeholder="Kalshi YES price (0-100)">
-                        <input type="text" id="kalshi-no" placeholder="Kalshi NO price (0-100)">
-                        <button onclick="submitKalshi()">✓ Submit</button>
-                    </div>
-                    <div style="font-size: 0.8rem; color: #888; margin-top: 8px;">
-                        Only use if auto-verification fails. Enter YES/NO prices from Kalshi.
+                        <input type="text" id="kalshi-yes" placeholder="YES price">
+                        <input type="text" id="kalshi-no" placeholder="NO price">
+                        <button onclick="submitKalshi()">Submit</button>
                     </div>
                 </div>
-                
-                <div id="kalshi-result" style="margin-top: 10px;"></div>
+                <div id="kalshi-result"></div>
             </div>
             
-            <!-- Hourly Prediction Card -->
+            <!-- Hourly Prediction -->
             <div class="card price-card">
-                <h2>⏰ HOURLY PRICE TARGETS</h2>
+                <h2>⏰ HOURLY TARGETS</h2>
                 <div id="hourly-time" style="color: #888; font-size: 0.9rem;">Waiting...</div>
                 <div class="tier-grid" id="hourly-tiers">
                     <div class="tier tier-safe"><div>SAFE</div><div class="tier-price" id="safe-price">--</div><div id="safe-conf">--</div></div>
@@ -210,7 +182,7 @@
         <!-- Accuracy Stats -->
         <div class="grid">
             <div class="card">
-                <h2>📊 15-MINUTE ACCURACY</h2>
+                <h2>📊 15-MIN ACCURACY</h2>
                 <div class="stats">
                     <div class="stat"><div>Overall</div><div class="stat-value" id="min15-overall">0%</div></div>
                     <div class="stat"><div>Recent</div><div class="stat-value" id="min15-recent">0%</div></div>
@@ -227,9 +199,9 @@
             </div>
         </div>
         
-        <!-- Pending Predictions (Need Manual Input) -->
-        <div class="card" id="pending-section">
-            <h2>⏳ PENDING VERIFICATION <span style="font-size: 12px; color: #ffc107;">(Auto-failed - Manual Needed)</span></h2>
+        <!-- Pending Predictions -->
+        <div class="card">
+            <h2>⏳ PENDING VERIFICATION</h2>
             <div id="pending-list">Loading...</div>
         </div>
         
@@ -239,7 +211,7 @@
             <div id="whale-data">Loading...</div>
         </div>
         
-        <button onclick="refreshAll()">🔄 Refresh All Data</button>
+        <button onclick="refreshAll()">🔄 Refresh</button>
         <div id="status" style="margin-top: 10px; color: #888;"></div>
     </div>
     
@@ -248,47 +220,39 @@
         
         async function fetchData() {
             try {
-                // Get current predictions
                 const predRes = await fetch('/api/predict', { method: 'POST', body: '{}', headers: {'Content-Type': 'application/json'} });
                 const predData = await predRes.json();
                 
-                // Get hourly predictions
                 const hourlyRes = await fetch('/api/hourly', { method: 'POST', body: '{}', headers: {'Content-Type': 'application/json'} });
                 const hourlyData = await hourlyRes.json();
                 
-                // Get accuracy stats
                 const accRes = await fetch('/api/accuracy');
                 const accData = await accRes.json();
                 
-                // Get pending predictions
                 const pendingRes = await fetch('/api/pending');
                 const pendingData = await pendingRes.json();
                 
-                // Get latest price
                 const latestRes = await fetch('/api/latest');
                 const latestData = await latestRes.json();
                 
-                // Get whale data
                 const whaleRes = await fetch('/api/whale');
                 const whaleData = await whaleRes.json();
                 
                 updateUI(predData, hourlyData, accData, pendingData, latestData, whaleData);
                 
                 document.getElementById('status').innerHTML = '✅ Updated ' + new Date().toLocaleTimeString();
-            } catch (error) {
-                console.error('Fetch error:', error);
-                document.getElementById('status').innerHTML = '❌ Error fetching data';
+            } catch (e) {
+                console.error(e);
+                document.getElementById('status').innerHTML = '❌ Error';
             }
         }
         
         function updateUI(pred, hourly, acc, pending, latest, whale) {
-            // Price
             if (latest.price) {
                 document.getElementById('price').innerHTML = `$${latest.price.toLocaleString()}`;
-                document.getElementById('last-update').innerHTML = `Last update: ${new Date().toLocaleTimeString()}`;
+                document.getElementById('last-update').innerHTML = `Updated: ${new Date().toLocaleTimeString()}`;
             }
             
-            // 15-minute prediction
             if (pred.direction) {
                 document.getElementById('min15-dir').innerHTML = pred.direction === 'UP' ? '📈 UP' : '📉 DOWN';
                 document.getElementById('min15-dir').className = pred.direction === 'UP' ? 'prediction up' : 'prediction down';
@@ -300,12 +264,10 @@
                 current15minPrediction = pred.prediction_id;
             } else {
                 document.getElementById('min15-dir').innerHTML = '⚪ WAITING';
-                document.getElementById('min15-dir').className = 'prediction';
                 document.getElementById('min15-conf').innerHTML = 'Waiting for next block';
                 document.getElementById('min15-bar').style.width = '0%';
             }
             
-            // Hourly prediction
             if (hourly.tiers) {
                 document.getElementById('safe-price').innerHTML = hourly.tiers.safe.formatted;
                 document.getElementById('safe-conf').innerHTML = `${hourly.tiers.safe.confidence.toFixed(0)}%`;
@@ -315,7 +277,6 @@
                 document.getElementById('agg-conf').innerHTML = `${hourly.tiers.aggressive.confidence.toFixed(0)}%`;
             }
             
-            // Accuracy stats
             document.getElementById('min15-overall').innerHTML = `${acc.min15.overall.toFixed(1)}%`;
             document.getElementById('min15-recent').innerHTML = `${acc.min15.recent.toFixed(1)}%`;
             document.getElementById('min15-count').innerHTML = `${acc.min15.correct}/${acc.min15.total}`;
@@ -323,32 +284,28 @@
             document.getElementById('hourly-recent').innerHTML = `${acc.hourly.recent.toFixed(1)}%`;
             document.getElementById('hourly-count').innerHTML = `${acc.hourly.correct}/${acc.hourly.total}`;
             
-            // Pending predictions (need manual input)
             const pending15 = pending['15min'] || {};
-            const pendingKeys = Object.keys(pending15);
-            
-            if (pendingKeys.length > 0) {
-                let html = '<div style="color: #ffc107; margin-bottom: 10px;">⚠️ Auto-verification failed. Please enter Kalshi data:</div>';
+            const keys = Object.keys(pending15);
+            if (keys.length > 0) {
+                let html = '<div style="color: #ffc107;">⚠️ Auto-verification failed. Manual input needed:</div>';
                 for (const [id, p] of Object.entries(pending15)) {
                     html += `<div class="pending-prediction">
-                        <strong>${p.start_time} → ${p.end_time}</strong>
-                        <span class="pending-badge">AUTO FAILED</span><br>
+                        <strong>${p.start_time} → ${p.end_time}</strong><br>
                         Predicted: <strong class="${p.prediction === 'UP' ? 'success' : 'error'}">${p.prediction}</strong> (${p.confidence.toFixed(0)}% confidence)<br>
-                        Start price: $${p.start_price.toLocaleString()}<br>
+                        Start: $${p.start_price.toLocaleString()}<br>
                         <div style="display: flex; gap: 10px; margin-top: 10px;">
                             <button onclick="manualVerify('${id}', 'UP')">✅ Mark UP</button>
                             <button onclick="manualVerify('${id}', 'DOWN')">❌ Mark DOWN</button>
-                            <button onclick="openKalshiModal('${id}', ${p.confidence})">📊 Enter Kalshi Prices</button>
+                            <button onclick="openKalshiModal('${id}', ${p.confidence})">📊 Enter Kalshi</button>
                         </div>
                     </div>`;
                 }
                 document.getElementById('pending-list').innerHTML = html;
             } else {
-                document.getElementById('pending-list').innerHTML = '<div style="color: #888;">No pending predictions - auto-verification working!</div>';
+                document.getElementById('pending-list').innerHTML = '<div style="color: #888;">No pending predictions</div>';
             }
             
-            // Whale data
-            if (whale.data && !whale.error) {
+            if (whale.data) {
                 document.getElementById('whale-data').innerHTML = `
                     <div class="stats">
                         <div class="stat"><div>Whale Ratio</div><div class="stat-value">${whale.data.ratio?.toFixed(2) || '1.00'}</div></div>
@@ -356,8 +313,6 @@
                         <div class="stat"><div>Signal</div><div class="stat-value">${whale.signal || 'neutral'}</div></div>
                     </div>
                 `;
-            } else {
-                document.getElementById('whale-data').innerHTML = '<div style="color: #888;">Whale data unavailable</div>';
             }
         }
         
@@ -365,45 +320,30 @@
             try {
                 const res = await fetch('/api/manual_verify', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        pred_id: predId,
-                        actual_direction: direction
-                    })
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({pred_id: predId, actual_direction: direction})
                 });
                 const data = await res.json();
                 if (data.success) {
-                    alert(`✅ Prediction marked as ${data.correct ? 'CORRECT' : 'WRONG'}`);
+                    alert(`✅ Marked as ${data.correct ? 'CORRECT' : 'WRONG'}`);
                     refreshAll();
-                } else {
-                    alert('Error: ' + (data.error || 'Unknown'));
                 }
-            } catch (error) {
-                alert('Error submitting');
-            }
+            } catch (e) { alert('Error'); }
         }
         
         async function submitKalshi() {
             const yes = document.getElementById('kalshi-yes').value;
             const no = document.getElementById('kalshi-no').value;
-            const predId = current15minPrediction;
-            
-            if (!predId) {
-                document.getElementById('kalshi-result').innerHTML = '<span class="error">No active prediction</span>';
+            if (!current15minPrediction || !yes || !no) {
+                document.getElementById('kalshi-result').innerHTML = '<span class="error">Missing info</span>';
                 return;
             }
-            
-            if (!yes || !no) {
-                document.getElementById('kalshi-result').innerHTML = '<span class="warning">Enter both YES and NO prices</span>';
-                return;
-            }
-            
             try {
                 const res = await fetch('/api/kalshi_check', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: {'Content-Type': 'application/json'},
                     body: JSON.stringify({
-                        pred_id: predId,
+                        pred_id: current15minPrediction,
                         up_prob: 0.5,
                         kalshi_yes: parseFloat(yes),
                         kalshi_no: parseFloat(no)
@@ -411,54 +351,33 @@
                 });
                 const data = await res.json();
                 if (data.success) {
-                    document.getElementById('kalshi-result').innerHTML = `<span class="success">✅ Prediction marked as ${data.correct ? 'CORRECT' : 'WRONG'}</span>`;
-                    setTimeout(() => { document.getElementById('kalshi-result').innerHTML = ''; }, 3000);
+                    document.getElementById('kalshi-result').innerHTML = `<span class="success">✅ Marked as ${data.correct ? 'CORRECT' : 'WRONG'}</span>`;
+                    setTimeout(() => { document.getElementById('kalshi-result').innerHTML = ''; }, 2000);
                     refreshAll();
-                } else {
-                    document.getElementById('kalshi-result').innerHTML = `<span class="error">❌ ${data.error || 'Error'}</span>`;
                 }
-            } catch (error) {
-                document.getElementById('kalshi-result').innerHTML = '<span class="error">❌ Error submitting</span>';
-            }
+            } catch (e) { alert('Error'); }
         }
         
         function openKalshiModal(predId, confidence) {
-            const yes = prompt("Enter Kalshi YES price (0-100) from that period:");
-            const no = prompt("Enter Kalshi NO price (0-100) from that period:");
-            
+            const yes = prompt("Enter Kalshi YES price (0-100):");
+            const no = prompt("Enter Kalshi NO price (0-100):");
             if (yes && no) {
-                submitKalshiForId(predId, confidence, parseFloat(yes), parseFloat(no));
-            }
-        }
-        
-        async function submitKalshiForId(predId, confidence, yes, no) {
-            try {
-                const res = await fetch('/api/kalshi_check', {
+                fetch('/api/kalshi_check', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: {'Content-Type': 'application/json'},
                     body: JSON.stringify({
                         pred_id: predId,
                         up_prob: confidence / 100,
-                        kalshi_yes: yes,
-                        kalshi_no: no
+                        kalshi_yes: parseFloat(yes),
+                        kalshi_no: parseFloat(no)
                     })
-                });
-                const data = await res.json();
-                if (data.success) {
-                    alert(`✅ Prediction marked as ${data.correct ? 'CORRECT' : 'WRONG'}`);
-                    refreshAll();
-                } else {
-                    alert('Error: ' + (data.error || 'Unknown'));
-                }
-            } catch (error) {
-                alert('Error submitting');
+                }).then(() => refreshAll());
             }
         }
         
-        function formatTime(isoString) {
-            if (!isoString) return '--:--';
-            const date = new Date(isoString);
-            return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        function formatTime(iso) {
+            if (!iso) return '--:--';
+            return new Date(iso).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
         }
         
         async function refreshAll() {
@@ -466,7 +385,6 @@
             await fetchData();
         }
         
-        // Initial load
         refreshAll();
         setInterval(refreshAll, 30000);
     </script>
