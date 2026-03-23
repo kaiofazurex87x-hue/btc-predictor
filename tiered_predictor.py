@@ -15,14 +15,19 @@ import config
 
 warnings.filterwarnings('ignore')
 
-MODELS_DIR = 'models/tiered'
-SCALER_PATH = 'models/tiered_scaler.joblib'
-DB_PATH     = 'data/hourly.db'
+MODELS_DIR = os.path.join(config.MODELS_DIR, 'tiered')
+SCALER_PATH = os.path.join(config.MODELS_DIR, 'tiered_scaler.joblib')
+DB_PATH     = os.path.join(config.DATA_DIR, 'hourly.db')
 TZ          = pytz.timezone(config.TIMEZONE)
 
 
 def now_ct():
     return datetime.now(pytz.utc).astimezone(TZ)
+
+
+def current_hour_window():
+    now = now_ct()
+    return now.replace(minute=0, second=0, microsecond=0)
 
 
 class TieredHourlyPredictor:
@@ -31,16 +36,19 @@ class TieredHourlyPredictor:
         self.scaler     = RobustScaler()
         self.models     = {}
         self.is_trained = False
+        self._cached_prediction = None
+        self._cached_hour_start = None
         self._init_db()
         self._init_models()
 
     def _init_db(self):
-        os.makedirs('data', exist_ok=True)
+        os.makedirs(config.DATA_DIR, exist_ok=True)
         conn = self._db()
         conn.execute('''
             CREATE TABLE IF NOT EXISTS hourly (
                 id              INTEGER PRIMARY KEY AUTOINCREMENT,
                 timestamp       TEXT,
+                hour_start      TEXT,
                 current_price   REAL,
                 predicted_price REAL,
                 confidence      REAL,
@@ -140,17 +148,17 @@ class TieredHourlyPredictor:
             df = self.fetch_data(3000)
         df = self._features(df)
         y  = self._label(df)
-        mask = ~y.isna()
-        df_c = df[mask]
-        y_c  = y[mask]
-        cols = self._xcols(df_c)
-        X    = np.nan_to_num(df_c[cols].values)
+        mask   = ~y.isna()
+        df_c   = df[mask]
+        y_c    = y[mask]
+        cols   = self._xcols(df_c)
+        X      = np.nan_to_num(df_c[cols].values)
         y_vals = y_c.values
-        split = int(len(X) * 0.8)
-        X_tr  = self.scaler.fit_transform(X[:split])
-        X_te  = self.scaler.transform(X[split:])
-        y_tr  = y_vals[:split]
-        y_te  = y_vals[split:]
+        split  = int(len(X) * 0.8)
+        X_tr   = self.scaler.fit_transform(X[:split])
+        X_te   = self.scaler.transform(X[split:])
+        y_tr   = y_vals[:split]
+        y_te   = y_vals[split:]
         scores = {}
         for name, m in self.models.items():
             m.fit(X_tr, y_tr)
@@ -160,12 +168,19 @@ class TieredHourlyPredictor:
             print(f"  {name}: R²={scores[name]:.3f}  MAE=${mae:.0f}")
         self.save_models()
         self.is_trained = True
+        self._cached_prediction = None
+        self._cached_hour_start = None
         print(f"  Ensemble avg R²: {np.mean(list(scores.values())):.3f}")
         return scores
 
-    def predict(self, override_price=None):
+    def predict(self, force=False):
         if not self.is_trained:
             raise RuntimeError("Hourly model not trained.")
+        hour = current_hour_window()
+        if (not force
+                and self._cached_prediction is not None
+                and self._cached_hour_start == hour):
+            return {**self._cached_prediction, 'cached': True}
         df = self.fetch_data(200)
         if df.empty:
             raise RuntimeError("No market data.")
@@ -204,15 +219,16 @@ class TieredHourlyPredictor:
             'aggressive': fmt(predicted_price - config.AGGRESSIVE_OFFSET)
         }
         ct_now = now_ct()
-        target = ct_now.replace(
-            minute=0, second=0, microsecond=0) + timedelta(hours=1)
+        target = hour + timedelta(hours=1)
         conn = self._db()
         conn.execute(
             """INSERT INTO hourly
-               (timestamp, current_price, predicted_price, confidence,
-                predicted_move, safe, modest, aggressive, target_time)
-               VALUES (?,?,?,?,?,?,?,?,?)""",
-            (ct_now.isoformat(), current_price, predicted_price,
+               (timestamp, hour_start, current_price, predicted_price,
+                confidence, predicted_move,
+                safe, modest, aggressive, target_time)
+               VALUES (?,?,?,?,?,?,?,?,?,?)""",
+            (ct_now.isoformat(), hour.isoformat(),
+             current_price, predicted_price,
              confidence, predicted_move,
              tiers['safe']['price'],
              tiers['modest']['price'],
@@ -221,14 +237,19 @@ class TieredHourlyPredictor:
         )
         conn.commit()
         conn.close()
-        return {
+        result = {
             'current_price':   current_price,
             'predicted_price': predicted_price,
             'predicted_move':  predicted_move,
             'confidence':      confidence,
             'target_time':     target.strftime('%I:%M %p CT'),
-            'tiers':           tiers
+            'hour':            hour.strftime('%I:%M %p CT'),
+            'tiers':           tiers,
+            'cached':          False
         }
+        self._cached_prediction = result
+        self._cached_hour_start = hour
+        return result
 
     def verify_pending(self):
         ct_now = now_ct()
@@ -252,10 +273,12 @@ class TieredHourlyPredictor:
                     continue
                 actual_price = ohlcv[0][4]
                 conn.execute(
-                    "UPDATE hourly SET actual_price=?, verified=1 WHERE id=?",
+                    """UPDATE hourly
+                       SET actual_price=?, verified=1 WHERE id=?""",
                     (actual_price, row_id))
                 verified += 1
-                print(f"[Hourly verify] Predicted ${predicted_price:.0f} "
+                print(f"[Hourly verify] "
+                      f"Predicted ${predicted_price:.0f} "
                       f"Actual ${actual_price:.0f} "
                       f"Error ${abs(actual_price - predicted_price):.0f}")
             except Exception as e:
