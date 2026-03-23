@@ -24,7 +24,13 @@ app.config['SECRET_KEY'] = config.SECRET_KEY
 predictor = BTCPredictor()
 tiered    = TieredHourlyPredictor()
 whale     = WhaleTracker()
-kalshi    = KalshiAPI()
+
+try:
+    kalshi = KalshiAPI()
+    print("[Kalshi] Initialized OK")
+except Exception as e:
+    print(f"[Kalshi] Init failed: {e}")
+    kalshi = None
 
 login_manager = LoginManager()
 login_manager.init_app(app)
@@ -50,6 +56,25 @@ def verify_pw(pw):
         return False
 
 
+def get_kalshi_15min():
+    try:
+        if kalshi:
+            return kalshi.get_btc_15min_line()
+    except Exception as e:
+        print(f"[Kalshi] 15-min fetch error: {e}")
+    return None
+
+
+def get_kalshi_hourly():
+    try:
+        if kalshi:
+            return kalshi.get_btc_hourly_line()
+    except Exception as e:
+        print(f"[Kalshi] Hourly fetch error: {e}")
+    return None
+
+
+# ── Auto-predict every 15 minutes ─────────────────────────────
 def auto_predict_loop():
     import pytz
     from datetime import datetime, timedelta
@@ -68,15 +93,16 @@ def auto_predict_loop():
         wait = (next_run - now).total_seconds()
         time.sleep(max(wait, 1))
         try:
-            line   = kalshi.get_btc_15min_line()
+            line   = get_kalshi_15min()
             result = predictor.predict(kalshi_line=line, force=True)
+            src    = f"Kalshi line ${line}" if line else "live BTC price"
             print(f"[Auto 15-min] {result['direction']} "
-                  f"{result['confidence']}% | "
-                  f"ref: ${result['reference_price']}")
+                  f"{result['confidence']}% | ref: {src}")
         except Exception as e:
             print(f"[Auto 15-min] Error: {e}")
 
 
+# ── Auto-predict every hour ────────────────────────────────────
 def auto_hourly_loop():
     import pytz
     from datetime import datetime, timedelta
@@ -90,8 +116,8 @@ def auto_hourly_loop():
         wait = (next_run - now).total_seconds()
         time.sleep(max(wait, 1))
         try:
-            line   = kalshi.get_btc_hourly_line()
-            result = tiered.predict(override_price=line)
+            # force=True generates fresh prediction at each new hour
+            result = tiered.predict(force=True)
             print(f"[Auto Hourly] "
                   f"Predicted: ${result['predicted_price']} | "
                   f"Safe: {result['tiers']['safe']['formatted']} | "
@@ -101,6 +127,7 @@ def auto_hourly_loop():
             print(f"[Auto Hourly] Error: {e}")
 
 
+# ── Verify every 2 minutes ─────────────────────────────────────
 def verify_loop():
     while True:
         time.sleep(120)
@@ -113,6 +140,7 @@ def verify_loop():
             print(f"[Verify] Error: {e}")
 
 
+# ── Prune every 6 hours ────────────────────────────────────────
 def prune_loop():
     while True:
         time.sleep(6 * 3600)
@@ -128,6 +156,7 @@ threading.Thread(target=verify_loop,       daemon=True).start()
 threading.Thread(target=prune_loop,        daemon=True).start()
 
 
+# ── Auth ───────────────────────────────────────────────────────
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
@@ -179,13 +208,14 @@ def api_kalshi_check():
         return jsonify({'error': str(e)})
 
 
+# ── Hourly predict — locked per hour ──────────────────────────
 @app.route('/api/hourly', methods=['POST'])
 @login_required
 def api_hourly():
     try:
-        body = request.get_json(silent=True) or {}
-        return jsonify(tiered.predict(
-            override_price=body.get('kalshi_line')))
+        # No override price needed — purely auto from live BTC
+        # Returns cached result if same hour, fresh if new hour
+        return jsonify(tiered.predict())
     except Exception as e:
         return jsonify({'error': str(e)})
 
@@ -195,8 +225,8 @@ def api_hourly():
 def api_kalshi_line():
     try:
         return jsonify({
-            'line_15min':  kalshi.get_btc_15min_line(),
-            'line_hourly': kalshi.get_btc_hourly_line()
+            'line_15min':  get_kalshi_15min(),
+            'line_hourly': get_kalshi_hourly()
         })
     except Exception as e:
         return jsonify({'error': str(e)})
