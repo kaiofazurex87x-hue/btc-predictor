@@ -14,8 +14,14 @@ from kalshi_api import KalshiAPI
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 os.chdir(BASE_DIR)
 
-for d in ['data', 'models/predictor', 'models/tiered', 'templates']:
-    os.makedirs(os.path.join(BASE_DIR, d), exist_ok=True)
+# Create all persistent directories on the mounted volume
+for d in [
+    config.DATA_DIR,
+    os.path.join(config.MODELS_DIR, 'predictor'),
+    os.path.join(config.MODELS_DIR, 'tiered'),
+    os.path.join(BASE_DIR, 'templates')
+]:
+    os.makedirs(d, exist_ok=True)
 
 app = Flask(__name__,
             template_folder=os.path.join(BASE_DIR, 'templates'))
@@ -116,7 +122,6 @@ def auto_hourly_loop():
         wait = (next_run - now).total_seconds()
         time.sleep(max(wait, 1))
         try:
-            # force=True generates fresh prediction at each new hour
             result = tiered.predict(force=True)
             print(f"[Auto Hourly] "
                   f"Predicted: ${result['predicted_price']} | "
@@ -208,13 +213,10 @@ def api_kalshi_check():
         return jsonify({'error': str(e)})
 
 
-# ── Hourly predict — locked per hour ──────────────────────────
 @app.route('/api/hourly', methods=['POST'])
 @login_required
 def api_hourly():
     try:
-        # No override price needed — purely auto from live BTC
-        # Returns cached result if same hour, fresh if new hour
         return jsonify(tiered.predict())
     except Exception as e:
         return jsonify({'error': str(e)})
