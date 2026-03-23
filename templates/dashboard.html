@@ -145,7 +145,8 @@
             <div class="big-price" id="predictedPrice">--</div>
             <div class="conf" id="confH">--%</div>
             <div class="conf-label">Confidence</div>
-            <div id="moveBadgeWrap" style="text-align:center;margin:4px 0"></div>
+            <div id="moveBadgeWrap" style="text-align:center;margin:4px 0">
+            </div>
             <div class="sub" id="targetH">
                 Auto-predicts every hour
             </div>
@@ -182,6 +183,11 @@
                     <div class="sl">Total Verified</div>
                 </div>
             </div>
+
+            <!-- Manual predict button -->
+            <button class="btn" onclick="predictHourly()">
+                🔄 Get Hourly Prediction
+            </button>
         </div>
     </div>
 
@@ -271,6 +277,7 @@ let lastPredId = null;
 let lastUpProb = null;
 let trainPoll  = null;
 
+// ── Training ──────────────────────────────────────────────────
 async function checkTrainStatus() {
     try {
         const s      = await get('/api/train_status');
@@ -329,6 +336,7 @@ async function startTraining() {
     }
 }
 
+// ── Predict 15-min ─────────────────────────────────────────────
 async function predict15() {
     const line = document.getElementById('kalshiLine').value;
     const body = line ? {kalshi_line: parseFloat(line)} : {};
@@ -368,6 +376,17 @@ function updateDir15(d) {
         : 'Prediction for: ' + d.target_time;
 }
 
+// ── Predict hourly ─────────────────────────────────────────────
+async function predictHourly() {
+    try {
+        const d = await post('/api/hourly', {});
+        if (d.error) { alert('Error: ' + d.error); return; }
+        updateDirH(d);
+        await loadAccuracy();
+        await loadHourlyHistory();
+    } catch(e) { alert('Error: ' + e); }
+}
+
 function updateDirH(d) {
     document.getElementById('predictedPrice').textContent =
         d.predicted_price ? '$' + fmt2(d.predicted_price) : '--';
@@ -393,6 +412,7 @@ function updateDirH(d) {
         (d.tiers ? d.tiers.aggressive.formatted : '--');
 }
 
+// ── Load latest auto-predictions ───────────────────────────────
 async function loadLatest() {
     try {
         const d = await get('/api/latest');
@@ -415,6 +435,7 @@ async function loadLatest() {
     } catch(e) { console.error('Latest error:', e); }
 }
 
+// ── Kalshi auto line ───────────────────────────────────────────
 async function loadKalshiLine() {
     try {
         const d   = await get('/api/kalshi_line');
@@ -429,6 +450,7 @@ async function loadKalshiLine() {
     } catch(e) { console.error('Kalshi line error:', e); }
 }
 
+// ── Accuracy ───────────────────────────────────────────────────
 async function loadAccuracy() {
     try {
         const d = await get('/api/accuracy');
@@ -451,6 +473,7 @@ async function loadAccuracy() {
     } catch(e) { console.error('Accuracy error:', e); }
 }
 
+// ── Whale ──────────────────────────────────────────────────────
 async function loadWhale() {
     try {
         const d = await get('/api/whale');
@@ -464,6 +487,7 @@ async function loadWhale() {
     } catch(e) { console.error('Whale error:', e); }
 }
 
+// ── 15-min History ─────────────────────────────────────────────
 async function loadHistory() {
     try {
         const d    = await get('/api/history');
@@ -506,6 +530,7 @@ async function loadHistory() {
     } catch(e) { console.error('History error:', e); }
 }
 
+// ── Hourly History ─────────────────────────────────────────────
 async function loadHourlyHistory() {
     try {
         const d    = await get('/api/history');
@@ -549,6 +574,7 @@ async function loadHourlyHistory() {
     } catch(e) { console.error('Hourly history error:', e); }
 }
 
+// ── Helpers ────────────────────────────────────────────────────
 function fmt2(n) {
     return Number(n).toLocaleString('en-US', {
         minimumFractionDigits: 2,
@@ -570,6 +596,7 @@ async function post(url, body) {
     return r.json();
 }
 
+// ── Auto refresh every 60 seconds ─────────────────────────────
 setInterval(() => {
     loadAccuracy();
     loadWhale();
@@ -579,6 +606,7 @@ setInterval(() => {
     loadKalshiLine();
 }, 60000);
 
+// ── On page load ───────────────────────────────────────────────
 checkTrainStatus();
 loadAccuracy();
 loadWhale();
