@@ -1,13 +1,13 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login - BTC Predictor</title>
     <style>
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             background: #0a0a0a;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             display: flex;
             justify-content: center;
             align-items: center;
@@ -50,9 +50,7 @@
             font-size: 16px;
             cursor: pointer;
         }
-        button:hover {
-            background: #ffaa33;
-        }
+        button:hover { background: #ffaa33; }
         .error {
             color: #f44336;
             text-align: center;
@@ -64,23 +62,19 @@
             border-radius: 8px;
             margin-bottom: 20px;
             text-align: center;
-        }
-        .flash-error {
-            color: #f44336;
             border-left: 3px solid #f44336;
+            color: #f44336;
         }
     </style>
 </head>
 <body>
     <div class="login-card">
         <h1>⚡ BTC Predictor</h1>
-        
         {% with messages = get_flashed_messages(with_categories=true) %}
             {% for category, message in messages %}
-                <div class="flash flash-{{ category }}">{{ message }}</div>
+                <div class="flash">{{ message }}</div>
             {% endfor %}
         {% endwith %}
-        
         <form method="POST">
             <input type="password" name="password" placeholder="Enter password" autofocus>
             <button type="submit">Login</button>
