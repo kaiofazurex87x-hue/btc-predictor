@@ -1,5 +1,5 @@
 """
-15-Minute BTC Predictor
+15-Minute BTC Predictor - No XGBoost
 """
 
 import numpy as np
