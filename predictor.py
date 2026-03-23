@@ -15,9 +15,9 @@ import config
 
 warnings.filterwarnings('ignore')
 
-MODELS_DIR = 'models/predictor'
-SCALER_PATH = 'models/predictor_scaler.joblib'
-DB_PATH     = 'data/predictions.db'
+MODELS_DIR = os.path.join(config.MODELS_DIR, 'predictor')
+SCALER_PATH = os.path.join(config.MODELS_DIR, 'predictor_scaler.joblib')
+DB_PATH     = os.path.join(config.DATA_DIR, 'predictions.db')
 TZ          = pytz.timezone(config.TIMEZONE)
 
 
@@ -44,7 +44,7 @@ class BTCPredictor:
         self._init_models()
 
     def _init_db(self):
-        os.makedirs('data', exist_ok=True)
+        os.makedirs(config.DATA_DIR, exist_ok=True)
         conn = self._db()
         conn.execute('''
             CREATE TABLE IF NOT EXISTS predictions (
@@ -109,7 +109,7 @@ class BTCPredictor:
             joblib.dump(m, f'{MODELS_DIR}/{name}.joblib')
         joblib.dump(self.scaler, SCALER_PATH)
 
-    def fetch_data(self, limit=5000):
+    def fetch_data(self, limit=3000):
         ohlcv = self.exchange.fetch_ohlcv('BTC/USD', '1m', limit=limit)
         df = pd.DataFrame(
             ohlcv,
@@ -153,7 +153,7 @@ class BTCPredictor:
     def train(self, df=None):
         print("Training 15-min predictor...")
         if df is None:
-            df = self.fetch_data(5000)
+            df = self.fetch_data(3000)
         df = self._features(df)
         y  = self._label(df)
         mask = ~y.isna()
@@ -178,30 +178,23 @@ class BTCPredictor:
     def predict(self, kalshi_line=None, force=False):
         if not self.is_trained:
             raise RuntimeError("Model not trained yet.")
-
         window = current_15min_window()
-
         if (not force
                 and kalshi_line is None
                 and self._cached_prediction is not None
                 and self._cached_window_start == window):
             return {**self._cached_prediction, 'cached': True}
-
         df = self.fetch_data(200)
         if df.empty:
             raise RuntimeError("No market data available.")
-
         live_price  = float(df['close'].iloc[-1])
         kalshi_line = float(kalshi_line) if kalshi_line is not None else None
         ref_price   = kalshi_line if kalshi_line is not None else live_price
-
         if kalshi_line is not None:
             df.iloc[-1, df.columns.get_loc('close')] = kalshi_line
-
         df_f = self._features(df)
         X    = np.nan_to_num(df_f[self._xcols(df_f)].values[-1:])
         Xsc  = self.scaler.transform(X)
-
         weights = {
             'xgboost': 0.35, 'random_forest': 0.35,
             'gradient_boosting': 0.30}
@@ -213,7 +206,6 @@ class BTCPredictor:
         down_prob  = round(100.0 - up_prob, 1)
         direction  = "UP" if up_prob >= 50 else "DOWN"
         confidence = round(min(100.0, abs(up_prob - 50) * 2), 1)
-
         ct_now   = now_ct()
         next_min = ((ct_now.minute // 15) + 1) * 15
         if next_min >= 60:
@@ -222,7 +214,6 @@ class BTCPredictor:
         else:
             target = ct_now.replace(
                 minute=next_min, second=0, microsecond=0)
-
         conn = self._db()
         cur  = conn.execute(
             """INSERT INTO predictions
@@ -236,7 +227,6 @@ class BTCPredictor:
         pred_id = cur.lastrowid
         conn.commit()
         conn.close()
-
         result = {
             'id':              pred_id,
             'direction':       direction,
@@ -251,11 +241,9 @@ class BTCPredictor:
             'window':          window.strftime('%I:%M %p CT'),
             'cached':          False
         }
-
         if kalshi_line is None:
             self._cached_prediction   = result
             self._cached_window_start = window
-
         return result
 
     def kalshi_check(self, pred_id, up_prob,
@@ -263,7 +251,6 @@ class BTCPredictor:
         result = {
             'yes': None, 'no': None,
             'best_action': 'SKIP', 'best_edge': 0, 'best_side': ''}
-
         if kalshi_yes is not None:
             yes_edge = round(up_prob - float(kalshi_yes), 1)
             result['yes'] = {
@@ -274,7 +261,6 @@ class BTCPredictor:
                 'recommendation': 'BUY' if yes_edge >= config.MIN_EDGE_CENTS
                                   else 'SKIP'
             }
-
         if kalshi_no is not None:
             down_prob = round(100.0 - up_prob, 1)
             no_edge   = round(down_prob - float(kalshi_no), 1)
@@ -286,7 +272,6 @@ class BTCPredictor:
                 'recommendation': 'BUY' if no_edge >= config.MIN_EDGE_CENTS
                                   else 'SKIP'
             }
-
         edges = []
         if result['yes']:
             edges.append((result['yes']['edge'], 'YES',
@@ -299,7 +284,6 @@ class BTCPredictor:
             result['best_action'] = best[2]
             result['best_edge']   = best[0]
             result['best_side']   = best[1]
-
         if pred_id:
             conn = self._db()
             conn.execute(
@@ -311,7 +295,6 @@ class BTCPredictor:
                  result['best_action'], result['best_edge'], pred_id))
             conn.commit()
             conn.close()
-
         return result
 
     def verify_pending(self):
@@ -349,8 +332,7 @@ class BTCPredictor:
         conn.commit()
         conn.close()
         if self.verified_since_retrain >= config.RETRAIN_AFTER_N_VERIFIED:
-            print(f"[Auto-retrain] triggered after "
-                  f"{self.verified_since_retrain} verified predictions")
+            print(f"[Auto-retrain] triggered")
             try:
                 self.train()
             except Exception as e:
