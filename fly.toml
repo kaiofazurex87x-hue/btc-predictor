@@ -1,23 +1,26 @@
-# fly.toml app configuration file generated for btc-predictor on 2026-03-23T02:21:18Z
-#
-# See https://fly.io/docs/reference/configuration/ for information about how to use this file.
-#
-
-app = 'btc-predictor'
-primary_region = 'ams'
+app = "btc-predictor"
+primary_region = "ord"
 
 [build]
+  [build.args]
+    PYTHON_VERSION = "3.11"
 
 [http_service]
   internal_port = 8080
   force_https = true
-  auto_stop_machines = 'stop'
+  auto_stop_machines = false
   auto_start_machines = true
-  min_machines_running = 0
-  processes = ['app']
+  min_machines_running = 1
+
+[env]
+  PORT = "8080"
+  DATA_DIR = "/data"
+
+[[mounts]]
+  source      = "btc_data"
+  destination = "/data"
 
 [[vm]]
-  memory = '1gb'
-  cpu_kind = 'shared'
+  cpu_kind = "shared"
   cpus = 1
   memory_mb = 512
